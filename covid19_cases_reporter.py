@@ -7,7 +7,7 @@ import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
 
-FILES_FOLDER = "data"
+FILES_FOLDER = "covid19_data"
 
 CCAAS = {
     "AN": "Andalucía",
