@@ -64,15 +64,14 @@ def get_cases_later_day_in_file(file_path):
 
 
 def get_tweet_sentences(date, cases_later_date, cases_day_before_later_date):
-    total_new_cases = 0
-    sentences = []
+    total_new_cases = sum(cases_later_date.values()) - sum(cases_day_before_later_date.values())
+    sentences = ["Casos reportados hasta el {0} (+{1}):".format(date.strftime("%d/%m/%Y"), total_new_cases), ""]
     for ccaa in cases_later_date:
-        new_cases_ccaa = cases_later_date[ccaa] - cases_day_before_later_date[ccaa]
-        sentences.append("{0}: +{1}".format(CCAAS[ccaa], new_cases_ccaa))
-        total_new_cases += new_cases_ccaa
+        ccaa_new_cases = cases_later_date[ccaa] - cases_day_before_later_date[ccaa]
+        ccaa_percentage = 100 * ccaa_new_cases / total_new_cases
+        sentences.append("{0}: +{1} ({2:.2f} %)".format(CCAAS[ccaa], ccaa_new_cases, ccaa_percentage))
     
-    return ["Casos reportados hasta el {0} (+{1}):".format(date.strftime("%d/%m/%Y"), total_new_cases), ""] + sentences
-
+    return sentences
 
 def get_tweets(sentences):
     tweets = []
