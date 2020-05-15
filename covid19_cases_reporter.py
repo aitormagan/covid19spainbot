@@ -78,7 +78,7 @@ def get_tweets(sentences):
     current_tweet = ""
     for sentence in sentences:
         sentence += "\n"
-        if len(current_tweet) + len(sentence) < 240:
+        if len(current_tweet) + len(sentence) < 280:
             current_tweet += sentence
         else:
             tweets.append(current_tweet)
