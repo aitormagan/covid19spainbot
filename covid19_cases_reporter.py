@@ -193,7 +193,7 @@ if __name__ == "__main__":
         try:
             download_file(today_file)
 
-            if os.path.getsize(today_file) == os.path.getsize(yesterday_file):
+            if os.path.getsize(today_file) <= os.path.getsize(yesterday_file):
                 logging.info("File has not been updated yet...")
                 os.remove(today_file)
                 if today.hour >= 13:
