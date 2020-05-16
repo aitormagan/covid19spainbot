@@ -4,8 +4,10 @@ import os
 import tweepy
 import sys
 import logging
+import tabula
 from collections import defaultdict
 from datetime import datetime, timedelta
+from shutil import copyfile
 
 FILES_FOLDER = "covid19_data"
 
@@ -13,14 +15,14 @@ CCAAS = {
     "AN": "Andalucía",
     "AR": "Aragón",
     "AS": "Asturias",
-    "IB": "Islas Baleares",
+    "IB": "Baleares",
     "CN": "Canarias",
     "CB": "Cantabria",
-    "CM": "Castilla-La Mancha",
+    "CM": "Castilla La Mancha",
     "CL": "Castilla y León",
     "CT": "Cataluña",
     "CE": "Ceuta",
-    "VC": "Comunidad Valenciana",
+    "VC": "C. Valenciana",
     "EX": "Extremadura",
     "GA": "Galicia",
     "MD": "Madrid",
@@ -31,6 +33,10 @@ CCAAS = {
     "RI": "La Rioja"
 }
 
+CCAA_REVERSE = {v: k for k, v in CCAAS.items()}
+MS_PDF_FORMAT = "https://www.mscbs.gob.es/en/profesionales/saludPublica/ccayes/alertasActual/nCov-China/documentos/Actualizacion_{0}_COVID-19.pdf"
+ISCIII_URL = "https://cnecovid.isciii.es/covid19/resources/agregados.csv"
+DATE_FORMAT = "%d/%m/%Y"
 
 def download_file(file_path):
     r = requests.get("https://cnecovid.isciii.es/covid19/resources/agregados.csv")
@@ -40,6 +46,17 @@ def download_file(file_path):
 
 def get_path_for_date(date):
     return os.path.join(FILES_FOLDER, "{0}.csv".format(date.strftime("%Y%m%d")))
+
+
+def process_file(today_file, yesterday_file, day_before_yesterday_file):
+    today_cases, today_deaths = get_cases_later_day_in_file(today_file)
+    yesterday_cases, yesterday_deaths = get_cases_later_day_in_file(yesterday_file)
+    day_before_yesrday_cases, day_before_yesterday_deaths = get_cases_later_day_in_file(day_before_yesterday_file)
+
+    publish_tweets_for_stat("PCR+", today, today_cases, yesterday_cases, day_before_yesrday_cases)
+    publish_tweets_for_stat("Muertes", today, today_deaths, yesterday_deaths, day_before_yesterday_deaths)
+
+    logging.info("Tweets published correctly!")
 
 
 def get_cases_later_day_in_file(file_path):
@@ -55,7 +72,7 @@ def get_cases_later_day_in_file(file_path):
             if len(ccaa) > 2:
                 continue
             
-            date = datetime.strptime(line_parts[1], "%d/%m/%Y")
+            date = datetime.strptime(line_parts[1], DATE_FORMAT)
             cases = int(line_parts[3])
             deaths = int(line_parts[7] if line_parts[7] else "0")
 
@@ -77,19 +94,22 @@ def get_tweet_sentences(stat_type, date, today_info, yesterday_info, day_before_
     yesterday_total = sum(yesterday_info.values()) - sum(day_before_yesterday_info.values())
     sentences = ["{0} reportadas hasta el {1} (+{2} {3}):".format(stat_type, date.strftime("%d/%m/%Y"), today_total, get_tendency_emoji(today_total, yesterday_total)), ""]
     for ccaa in today_info:
-        ccaa_yesterday_total = yesterday_info[ccaa] - day_before_yesterday_info[ccaa]
         ccaa_today_total = today_info[ccaa] - yesterday_info[ccaa]
-        ccaa_percentage = 100 * ccaa_today_total / today_total
-        sentences.append("{0}: +{1} ({2:.2f} %) {3}".format(CCAAS[ccaa], ccaa_today_total, ccaa_percentage, get_tendency_emoji(ccaa_today_total, ccaa_yesterday_total)))
+        if ccaa_today_total >= 0:
+            ccaa_yesterday_total = yesterday_info[ccaa] - day_before_yesterday_info[ccaa]
+            ccaa_percentage = 100 * ccaa_today_total / today_total
+            sentences.append("{0}: +{1} ({2:.2f} %) {3}".format(CCAAS[ccaa], ccaa_today_total, ccaa_percentage, get_tendency_emoji(ccaa_today_total, ccaa_yesterday_total)))
+        else:
+            sentences.append("{0}: En revisión...".format(CCAAS[ccaa]))
     
     return sentences
 
 
 def get_tendency_emoji(today_number, yesterday_number):
     if today_number > yesterday_number:
-        return '🔺'
+        return '🔺{0}'.format(today_number - yesterday_number)
     elif yesterday_number > today_number:
-        return '🔻'
+        return '🔻{0}'.format(yesterday_number - today_number)
     else:
         return '🔙'
 
@@ -112,15 +132,46 @@ def get_tweets(sentences):
 
 def publish_tweets(tweets):
 
-    auth = tweepy.OAuthHandler("API_SECRET", 
-                               "API_SECRET_KEY")
-    auth.set_access_token("ACCESS_TOKEN", 
-                          "ACCESS_TOKEN_SECRET")
+    api = get_twitter_api()
 
     last_tweet = None
     for tweet in tweets:
-        api = tweepy.API(auth)
         last_tweet = api.update_status(tweet, last_tweet).id
+
+
+def send_dm_error():
+    api = get_twitter_api()
+    api.send_direct_message(api.get_user("aitormagan").id, "There was an error, please, check!")
+
+
+def get_twitter_api():
+    auth = tweepy.OAuthHandler(os.environ.get("API_SECRET", ""),
+                               os.environ.get("API_SECRET_KEY", ""))
+    auth.set_access_token(os.environ.get("ACCESS_TOKEN", ""),
+                          os.environ.get("ACCESS_TOKEN_SECRET", ""))
+    return tweepy.API(auth)
+
+
+def create_custom_file(today, yesterday, today_file, yesterday_file):
+    cases = {}
+    deaths = {}
+    df = tabula.read_pdf(MS_PDF_FORMAT.format(get_pdf_id_for_date(today)), pages='1,2')
+    
+    for i in range(2, 21):
+        cases[CCAA_REVERSE[df[-2]['Unnamed: 0'][i].replace('*', '')]] = int(df[-2]['Unnamed: 1'][i].replace('.', ''))
+        deaths[CCAA_REVERSE[df[-1]['Unnamed: 0'][i].replace('*', '')]] = int(df[-1]['Fallecidos'][i].split(" ")[0].replace('.', ''))
+    
+    copyfile(yesterday_file, today_file)
+    
+    with open(today_file, 'a') as f:
+        for ccaa in cases:
+            row = '\n{0},{1},,{2},,,,{3},'.format(ccaa, yesterday.strftime(DATE_FORMAT), cases[ccaa], deaths[ccaa])
+            f.write(row)
+
+def get_pdf_id_for_date(date):
+    # 14/5/2020 -> id: 105
+    reference_date = datetime(2020, 5, 14)
+    return 105 + (date - reference_date).days
 
 
 if __name__ == "__main__":
@@ -139,23 +190,22 @@ if __name__ == "__main__":
     day_before_yesterday_file = get_path_for_date(day_before_yesterday)
 
     if not os.path.exists(today_file):
-        download_file(today_file)
+        try:
+            download_file(today_file)
 
-        if os.path.getsize(today_file) == os.path.getsize(yesterday_file):
-            logging.info("File has not been updated yet...")
-            os.remove(today_file)
-        else:
-            try:
-                today_cases, today_deaths = get_cases_later_day_in_file(today_file)
-                yesterday_cases, yesterday_deaths = get_cases_later_day_in_file(yesterday_file)
-                day_before_yesrday_cases, day_before_yesterday_deaths = get_cases_later_day_in_file(day_before_yesterday_file)
-                
-                publish_tweets_for_stat("PCR+", today, today_cases, yesterday_cases, day_before_yesrday_cases)
-                publish_tweets_for_stat("Muertes", today, today_deaths, yesterday_deaths, day_before_yesterday_deaths)
-
-                logging.info("Tweets published correctly!")
-            except Exception as e:
-                logging.exception("Unhandled exception while trying to publish tweets. Today file will be removed...")
+            if os.path.getsize(today_file) == os.path.getsize(yesterday_file):
+                logging.info("File has not been updated yet...")
                 os.remove(today_file)
+                if today.hour >= 13:
+                    logging.info("Trying to get information using the PDFs...")
+                    create_custom_file(today, yesterday, today_file, yesterday_file)
+                    process_file(today_file, yesterday_file, day_before_yesterday_file)
+            else:
+                process_file(today_file, yesterday_file, day_before_yesterday_file)
+        except Exception as e:
+            logging.exception("Unhandled exception while trying to publish tweets. Today file will be removed...")
+            if os.path.exists(today_file):
+                os.remove(today_file)
+            send_dm_error()
     else:
         logging.info("File already exists...")
