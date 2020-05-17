@@ -97,6 +97,7 @@ def get_tweet_sentences(stat_type, date, today_info, yesterday_info, day_before_
         ccaa_today_total = today_info[ccaa] - yesterday_info[ccaa]
         if ccaa_today_total >= 0:
             ccaa_yesterday_total = yesterday_info[ccaa] - day_before_yesterday_info[ccaa]
+            ccaa_yesterday_total = ccaa_yesterday_total if ccaa_yesterday_total >= 0 else 0
             ccaa_percentage = 100 * ccaa_today_total / today_total
             sentences.append("{0}: +{1} ({2:.2f} %) {3}".format(CCAAS[ccaa], ccaa_today_total, ccaa_percentage, get_tendency_emoji(ccaa_today_total, ccaa_yesterday_total)))
         else:
@@ -118,16 +119,20 @@ def get_tweets(sentences):
     tweets = []
     current_tweet = ""
     for sentence in sentences:
-        sentence += "\n"
-        if len(current_tweet) + len(sentence) < 280:
-            current_tweet += sentence
-        else:
-            tweets.append(current_tweet)
-            current_tweet = sentence
+        # Twitter counts emoji as double characters...
+        if sentence_length(current_tweet) + sentence_length(sentence) > 280:
+            tweets.append(current_tweet.strip("\n"))
+            current_tweet = ""
+        
+        current_tweet += sentence + "\n"
 
     tweets.append(current_tweet)
 
     return tweets
+
+
+def sentence_length(sentence):
+    return len(sentence) + sentence.count("🔺") + sentence.count("🔻") + sentence.count("🔙")
 
 
 def publish_tweets(tweets):
