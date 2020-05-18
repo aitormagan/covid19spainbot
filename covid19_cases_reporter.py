@@ -96,16 +96,12 @@ def get_tweet_sentences(today_info, yesterday_info, day_before_yesterday_info):
     sentences = []
     for ccaa in today_info:
         ccaa_today_total = today_info[ccaa] - yesterday_info[ccaa]
-        if ccaa_today_total >= 0:
-            ccaa_yesterday_total = yesterday_info[ccaa] - day_before_yesterday_info[ccaa]
-            ccaa_yesterday_total = ccaa_yesterday_total if ccaa_yesterday_total >= 0 else 0
-            ccaa_percentage = 100 * ccaa_today_total / today_total
-            sentences.append("{0}: +{1} ({2:.2f} %) {3}".format(CCAAS[ccaa], ccaa_today_total, ccaa_percentage, get_tendency_emoji(ccaa_today_total, ccaa_yesterday_total)))
-        else:
-            sentences.append("{0}: En revisión...".format(CCAAS[ccaa]))
+        ccaa_yesterday_total = yesterday_info[ccaa] - day_before_yesterday_info[ccaa]
+        ccaa_percentage = 100 * ccaa_today_total / today_total
+        sentences.append("{0}: {1:+} ({2:.2f} %) {3}".format(CCAAS[ccaa], ccaa_today_total, ccaa_percentage, get_tendency_emoji(ccaa_today_total, ccaa_yesterday_total)))
     
     sentences.append("")
-    sentences.append("TOTAL ESPAÑA: +{0} {1}".format(today_total, get_tendency_emoji(today_total, yesterday_total)))
+    sentences.append("TOTAL ESPAÑA: {0:+} {1}".format(today_total, get_tendency_emoji(today_total, yesterday_total)))
     return sentences
 
 def get_tendency_emoji(today_number, yesterday_number):
