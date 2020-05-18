@@ -34,6 +34,28 @@ CCAAS = {
     "RI": "La Rioja"
 }
 
+CCAA_POPULATION = {
+    "AN": 8414240,
+    "AR": 1319291,
+    "AS": 1022800,
+    "IB": 1149460,
+    "CN": 2153389,
+    "CB": 581078,
+    "CM": 2032863,
+    "CL": 2399548,
+    "CT": 7675217,
+    "CE": 84777,
+    "VC": 5003769,
+    "EX": 1067710,
+    "GA": 2699499,
+    "MD": 6663394,
+    "ML": 86487,
+    "MC": 1493898,
+    "NC": 654214,
+    "PV": 2207776,
+    "RI": 316798
+}
+
 CCAA_REVERSE = {v: k for k, v in CCAAS.items()}
 MS_PDF_FORMAT = "https://www.mscbs.gob.es/en/profesionales/saludPublica/ccayes/alertasActual/nCov-China/documentos/Actualizacion_{0}_COVID-19.pdf"
 ISCIII_URL = "https://cnecovid.isciii.es/covid19/resources/agregados.csv"
@@ -97,8 +119,8 @@ def get_tweet_sentences(today_info, yesterday_info, day_before_yesterday_info):
     for ccaa in today_info:
         ccaa_today_total = today_info[ccaa] - yesterday_info[ccaa]
         ccaa_yesterday_total = yesterday_info[ccaa] - day_before_yesterday_info[ccaa]
-        ccaa_percentage = 100 * ccaa_today_total / today_total
-        sentences.append("{0}: {1:+} ({2:.2f} %) {3}".format(CCAAS[ccaa], ccaa_today_total, ccaa_percentage, get_tendency_emoji(ccaa_today_total, ccaa_yesterday_total)))
+        ccaa_impact = ccaa_today_total / CCAA_POPULATION[ccaa] * 100000
+        sentences.append("{0}: {1:+} ({2:.2f}/100.000 hab.) {3}".format(CCAAS[ccaa], ccaa_today_total, ccaa_impact, get_tendency_emoji(ccaa_today_total, ccaa_yesterday_total)))
     
     sentences.append("")
     sentences.append("TOTAL ESPAÑA: {0:+} {1}".format(today_total, get_tendency_emoji(today_total, yesterday_total)))
