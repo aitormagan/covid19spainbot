@@ -5,6 +5,7 @@ import tweepy
 import sys
 import logging
 import tabula
+import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 from shutil import copyfile
@@ -84,15 +85,15 @@ def get_cases_later_day_in_file(file_path):
 
 
 def publish_tweets_for_stat(stat_type, date, today_info, yesterday_info, day_before_yesterday_info):
-    sentences = get_tweet_sentences(stat_type, today, today_info, yesterday_info, day_before_yesterday_info)
-    tweets = get_tweets(sentences)
+    sentences = get_tweet_sentences(today_info, yesterday_info, day_before_yesterday_info)
+    tweets = get_tweets(stat_type, date, sentences)
     publish_tweets(tweets)
 
 
-def get_tweet_sentences(stat_type, date, today_info, yesterday_info, day_before_yesterday_info):
+def get_tweet_sentences(today_info, yesterday_info, day_before_yesterday_info):
     today_total = sum(today_info.values()) - sum(yesterday_info.values())
     yesterday_total = sum(yesterday_info.values()) - sum(day_before_yesterday_info.values())
-    sentences = ["{0} reportadas hasta el {1} (+{2} {3}):".format(stat_type, date.strftime("%d/%m/%Y"), today_total, get_tendency_emoji(today_total, yesterday_total)), ""]
+    sentences = []
     for ccaa in today_info:
         ccaa_today_total = today_info[ccaa] - yesterday_info[ccaa]
         if ccaa_today_total >= 0:
@@ -103,8 +104,9 @@ def get_tweet_sentences(stat_type, date, today_info, yesterday_info, day_before_
         else:
             sentences.append("{0}: En revisión...".format(CCAAS[ccaa]))
     
+    sentences.append("")
+    sentences.append("TOTAL ESPAÑA: +{0} {1}".format(today_total, get_tendency_emoji(today_total, yesterday_total)))
     return sentences
-
 
 def get_tendency_emoji(today_number, yesterday_number):
     if today_number > yesterday_number:
@@ -115,12 +117,16 @@ def get_tendency_emoji(today_number, yesterday_number):
         return '🔙'
 
 
-def get_tweets(sentences):
+def get_tweets(stat_type, date, sentences):
     tweets = []
     current_tweet = ""
+    header_format = "{0} reportadas hasta el {1} ({2}/{3}):\n\n"
+    # We assume that the total amount of tweets will be 9 or less...
+    header_length = tweet_length(header_format.format(stat_type, date.strftime(DATE_FORMAT), 0, 0))
+
     for sentence in sentences:
         # Twitter counts emoji as double characters...
-        if sentence_length(current_tweet) + sentence_length(sentence) > 280:
+        if tweet_length(current_tweet) + tweet_length(sentence) + header_length > 280:
             tweets.append(current_tweet.strip("\n"))
             current_tweet = ""
         
@@ -128,11 +134,12 @@ def get_tweets(sentences):
 
     tweets.append(current_tweet)
 
-    return tweets
+    return list(map(lambda x: header_format.format(stat_type, date.strftime(DATE_FORMAT), x + 1, len(tweets)) + tweets[x], range(0, len(tweets))))
 
 
-def sentence_length(sentence):
-    return len(sentence) + sentence.count("🔺") + sentence.count("🔻") + sentence.count("🔙")
+def tweet_length(sentence):
+    emoji_regex = re.compile('[\U00010000-\U0010ffff]', flags=re.UNICODE)
+    return len(sentence) + len(emoji_regex.findall(sentence))
 
 
 def publish_tweets(tweets):
@@ -201,7 +208,7 @@ if __name__ == "__main__":
             if os.path.getsize(today_file) <= os.path.getsize(yesterday_file):
                 logging.info("File has not been updated yet...")
                 os.remove(today_file)
-                if today.hour >= 13:
+                if today.hour >= 20:
                     logging.info("Trying to get information using the PDFs...")
                     create_custom_file(today, yesterday, today_file, yesterday_file)
                     process_file(today_file, yesterday_file, day_before_yesterday_file)
