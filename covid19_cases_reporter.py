@@ -71,13 +71,28 @@ def get_path_for_date(date):
     return os.path.join(FILES_FOLDER, "{0}.csv".format(date.strftime("%Y%m%d")))
 
 
-def process_file(today_file, yesterday_file, day_before_yesterday_file):
-    today_cases, today_deaths = get_cases_later_day_in_file(today_file)
-    yesterday_cases, yesterday_deaths = get_cases_later_day_in_file(yesterday_file)
-    day_before_yesrday_cases, day_before_yesterday_deaths = get_cases_later_day_in_file(day_before_yesterday_file)
+def process_file(today, today_file, yesterday_file, day_before_yesterday_file):
+    today_pcrs, today_deaths, today_antibodies = get_cases_later_day_in_file(today_file)
+    yesterday_pcrs, yesterday_deaths, yesterday_antibodies = get_cases_later_day_in_file(yesterday_file)
+    day_before_yesterday_pcrs, day_before_yesterday_deaths, day_before_yesterday_antibodies = get_cases_later_day_in_file(day_before_yesterday_file)
+    today_cases = get_total_cases(today_pcrs, yesterday_antibodies)
+    yesterday_cases = get_total_cases(yesterday_pcrs, yesterday_antibodies)
+    day_before_yesterday_cases = get_total_cases(day_before_yesterday_pcrs, day_before_yesterday_antibodies)
 
-    publish_tweets_for_stat("PCR+", today, today_cases, yesterday_cases, day_before_yesrday_cases)
+    # Antibodies information is not availble when the information has been collected from the PDFs...
+    # At least, yesterday info is required to calculate the number of new cases today...
+    antibodies_available = today_antibodies and yesterday_antibodies
+
+    publish_tweets_for_stat("PCR+", today, today_pcrs, yesterday_pcrs, day_before_yesterday_pcrs)
     publish_tweets_for_stat("Muertes", today, today_deaths, yesterday_deaths, day_before_yesterday_deaths)
+    publish_tweets_for_stat("Ag+", today, today_antibodies, yesterday_antibodies, day_before_yesterday_antibodies) if antibodies_available else None
+
+    pcrs_summary = get_summary("PCR+", today_pcrs, yesterday_pcrs, day_before_yesterday_pcrs)
+    deaths_summary = get_summary("Muertes", today_deaths, yesterday_deaths, day_before_yesterday_deaths)
+    antibodies_summary = get_summary("Ag+", today_antibodies, yesterday_antibodies, day_before_yesterday_antibodies) if antibodies_available else None
+    cases_summary = get_summary("Total Casos", today_cases, yesterday_cases, day_before_yesterday_cases) if antibodies_available else None
+
+    publish_tweets([get_summary_tweet(today, pcrs_summary, antibodies_summary, cases_summary, deaths_summary)])
 
     logging.info("Tweets published correctly!")
 
@@ -86,6 +101,7 @@ def get_cases_later_day_in_file(file_path):
 
     cases_by_ccaa_and_date = defaultdict(dict)
     deaths_by_ccaa_and_date = defaultdict(dict)
+    antibodies_by_ccaa_and_date = defaultdict(dict)
     with codecs.open(file_path, "r", "iso-8859-1") as f:
         for line in f:
             
@@ -97,13 +113,33 @@ def get_cases_later_day_in_file(file_path):
             
             date = datetime.strptime(line_parts[1], DATE_FORMAT)
             cases = int(line_parts[3])
+            antibodies = int(line_parts[4]) if line_parts[4] else None
             deaths = int(line_parts[7] if line_parts[7] else "0")
 
             cases_by_ccaa_and_date[date][ccaa] = cases
             deaths_by_ccaa_and_date[date][ccaa] = deaths
+            antibodies_by_ccaa_and_date[date][ccaa] = antibodies
 
     later_date = max(cases_by_ccaa_and_date.keys())
-    return cases_by_ccaa_and_date[later_date], deaths_by_ccaa_and_date[later_date]
+    antibodies_later_date = antibodies_by_ccaa_and_date[later_date]
+    antibodies_later_date = {k: v for k, v in antibodies_later_date.items() if v is not None}
+    return cases_by_ccaa_and_date[later_date], deaths_by_ccaa_and_date[later_date], antibodies_later_date
+
+
+def get_total_cases(pcrs, antibodies):
+    return {k: pcrs[k] + antibodies[k] for k in pcrs} if antibodies else None
+
+
+def get_summary(stat_type, today_info, yesterday_info, day_before_yesterday_info):
+    today_total = sum(today_info.values()) - sum(yesterday_info.values())
+    yesteday_total = sum(yesterday_info.values()) - sum(day_before_yesterday_info.values()) if day_before_yesterday_info else None
+    sentence = "{0}: {1:+} {2} {3} (Totales: {4:,})".format(stat_type, today_total, get_impact_string(today_total), get_tendency_emoji(today_total, yesteday_total), sum(today_info.values())).replace(",", ".")
+    return " ".join(sentence.split())
+
+
+def get_summary_tweet(date, pcrs_summary, antibodies_summary, cases_summary, deaths_summary):
+    items = ["Resumen España a fecha {0}:".format(date.strftime(DATE_FORMAT)), "", pcrs_summary, antibodies_summary, cases_summary, deaths_summary]
+    return "\n".join(list(filter(lambda x: x is not None, items)))
 
 
 def publish_tweets_for_stat(stat_type, date, today_info, yesterday_info, day_before_yesterday_info):
@@ -117,22 +153,29 @@ def get_tweet_sentences(today_info, yesterday_info, day_before_yesterday_info):
     yesterday_total = sum(yesterday_info.values()) - sum(day_before_yesterday_info.values())
     sentences = []
     for ccaa in today_info:
-        ccaa_today_total = today_info[ccaa] - yesterday_info[ccaa]
-        ccaa_yesterday_total = yesterday_info[ccaa] - day_before_yesterday_info[ccaa]
-        ccaa_impact = ccaa_today_total / CCAA_POPULATION[ccaa] * 100000
-        sentences.append("{0}: {1:+} ({2:.2f}/100.000 hab.) {3}".format(CCAAS[ccaa], ccaa_today_total, ccaa_impact, get_tendency_emoji(ccaa_today_total, ccaa_yesterday_total)))
+        ccaa_today_total = today_info[ccaa] - yesterday_info.get(ccaa, 0)
+        ccaa_yesterday_total = yesterday_info[ccaa] - day_before_yesterday_info[ccaa] if ccaa in yesterday_info and ccaa in day_before_yesterday_info else None
+        sentence = "{0}: {1:+} {2} {3}".format(CCAAS[ccaa], ccaa_today_total, get_impact_string(ccaa_today_total, ccaa), get_tendency_emoji(ccaa_today_total, ccaa_yesterday_total))
+        sentences.append(' '.join(sentence.split()))
     
-    sentences.append("")
-    sentences.append("TOTAL ESPAÑA: {0:+} {1}".format(today_total, get_tendency_emoji(today_total, yesterday_total)))
     return sentences
 
+
 def get_tendency_emoji(today_number, yesterday_number):
-    if today_number > yesterday_number:
+    if yesterday_number is None:
+        return ""
+    elif today_number > yesterday_number:
         return '🔺{0}'.format(today_number - yesterday_number)
     elif yesterday_number > today_number:
         return '🔻{0}'.format(yesterday_number - today_number)
     else:
         return '🔙'
+
+
+def get_impact_string(total_cases, ccaa=None):
+    divider = CCAA_POPULATION[ccaa] if ccaa else sum(CCAA_POPULATION.values())
+    ccaa_impact = total_cases * 1000000 / divider
+    return "({0:.2f}/millón)".format(ccaa_impact).replace(".", ",") if total_cases > 0 else ""
 
 
 def get_tweets(stat_type, date, sentences):
@@ -150,7 +193,7 @@ def get_tweets(stat_type, date, sentences):
         
         current_tweet += sentence + "\n"
 
-    tweets.append(current_tweet)
+    tweets.append(current_tweet.strip("\n"))
 
     return list(map(lambda x: header_format.format(stat_type, date.strftime(DATE_FORMAT), x + 1, len(tweets)) + tweets[x], range(0, len(tweets))))
 
@@ -203,14 +246,8 @@ def get_pdf_id_for_date(date):
     reference_date = datetime(2020, 5, 14)
     return 105 + (date - reference_date).days
 
-
-if __name__ == "__main__":
-    
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s %(levelname)s %(message)s',
-                        stream=sys.stdout)
-    os.chdir(os.path.dirname(__file__))
-    
+def main():
+        
     today = datetime.now()
     yesterday = today - timedelta(days=1)
     day_before_yesterday = today - timedelta(days=2)
@@ -229,9 +266,9 @@ if __name__ == "__main__":
                 if today.hour >= 20:
                     logging.info("Trying to get information using the PDFs...")
                     create_custom_file(today, yesterday, today_file, yesterday_file)
-                    process_file(today_file, yesterday_file, day_before_yesterday_file)
+                    process_file(today, today_file, yesterday_file, day_before_yesterday_file)
             else:
-                process_file(today_file, yesterday_file, day_before_yesterday_file)
+                process_file(today, today_file, yesterday_file, day_before_yesterday_file)
         except Exception as e:
             logging.exception("Unhandled exception while trying to publish tweets. Today file will be removed...")
             if os.path.exists(today_file):
@@ -239,3 +276,13 @@ if __name__ == "__main__":
             send_dm_error()
     else:
         logging.info("File already exists...")
+
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s %(levelname)s %(message)s',
+                        stream=sys.stdout)
+    os.chdir(os.path.dirname(__file__))
+
+    main()
