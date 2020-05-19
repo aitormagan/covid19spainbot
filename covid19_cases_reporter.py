@@ -235,11 +235,13 @@ def create_custom_file(today, yesterday, today_file, yesterday_file):
         deaths[CCAA_REVERSE[df[-1]['Unnamed: 0'][i].replace('*', '')]] = int(df[-1]['Fallecidos'][i].split(" ")[0].replace('.', ''))
     
     copyfile(yesterday_file, today_file)
+
+    rows = []
+    for ccaa in cases:
+        rows.append('{0},{1},,{2},,,,{3},'.format(ccaa, yesterday.strftime(DATE_FORMAT), cases[ccaa], deaths[ccaa]))
     
     with open(today_file, 'a') as f:
-        for ccaa in cases:
-            row = '\n{0},{1},,{2},,,,{3},'.format(ccaa, yesterday.strftime(DATE_FORMAT), cases[ccaa], deaths[ccaa])
-            f.write(row)
+        f.write("\n".join(rows))
 
 def get_pdf_id_for_date(date):
     # 14/5/2020 -> id: 105
