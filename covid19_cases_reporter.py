@@ -241,7 +241,7 @@ def create_custom_file(today, yesterday, today_file, yesterday_file):
         rows.append('{0},{1},,{2},,,,{3},'.format(ccaa, yesterday.strftime(DATE_FORMAT), cases[ccaa], deaths[ccaa]))
     
     with open(today_file, 'a') as f:
-        f.write("\n".join(rows))
+        f.write("\n".join(rows) + "\n")
 
 def get_pdf_id_for_date(date):
     # 14/5/2020 -> id: 105
