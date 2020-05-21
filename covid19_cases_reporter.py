@@ -75,7 +75,7 @@ def process_file(today, today_file, yesterday_file, day_before_yesterday_file):
     today_pcrs, today_deaths, today_antibodies = get_cases_later_day_in_file(today_file)
     yesterday_pcrs, yesterday_deaths, yesterday_antibodies = get_cases_later_day_in_file(yesterday_file)
     day_before_yesterday_pcrs, day_before_yesterday_deaths, day_before_yesterday_antibodies = get_cases_later_day_in_file(day_before_yesterday_file)
-    today_cases = get_total_cases(today_pcrs, yesterday_antibodies)
+    today_cases = get_total_cases(today_pcrs, today_antibodies)
     yesterday_cases = get_total_cases(yesterday_pcrs, yesterday_antibodies)
     day_before_yesterday_cases = get_total_cases(day_before_yesterday_pcrs, day_before_yesterday_antibodies)
 
@@ -114,7 +114,7 @@ def get_cases_later_day_in_file(file_path):
             date = datetime.strptime(line_parts[1], DATE_FORMAT)
             cases = int(line_parts[3])
             antibodies = int(line_parts[4]) if line_parts[4] else None
-            deaths = int(line_parts[7] if line_parts[7] else "0")
+            deaths = int(line_parts[7] if line_parts[7].strip() else "0")
 
             cases_by_ccaa_and_date[date][ccaa] = cases
             deaths_by_ccaa_and_date[date][ccaa] = deaths
