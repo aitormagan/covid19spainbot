@@ -131,6 +131,7 @@ def get_total_cases(pcrs, antibodies):
 
 
 def get_summary(stat_type, today_info, yesterday_info, day_before_yesterday_info):
+    print(today_info, yesterday_info)
     today_total = sum(today_info.values()) - sum(yesterday_info.values())
     yesteday_total = sum(yesterday_info.values()) - sum(day_before_yesterday_info.values()) if day_before_yesterday_info else None
     sentence = "{0}: {1:+} {2} {3} (Totales: {4:,})".format(stat_type, today_total, get_impact_string(today_total), get_tendency_emoji(today_total, yesteday_total), sum(today_info.values())).replace(",", ".")
@@ -209,7 +210,8 @@ def publish_tweets(tweets):
 
     last_tweet = None
     for tweet in tweets:
-        last_tweet = api.update_status(tweet, last_tweet).id
+        # last_tweet = api.update_status(tweet, last_tweet).id
+        print(tweet)
 
 
 def send_dm_error():
@@ -231,8 +233,8 @@ def create_custom_file(today, yesterday, today_file, yesterday_file):
     df = tabula.read_pdf(MS_PDF_FORMAT.format(get_pdf_id_for_date(today)), pages='1,2')
     
     for i in range(2, 21):
-        cases[CCAA_REVERSE[df[-2]['Unnamed: 0'][i].replace('*', '')]] = int(df[-2]['Unnamed: 1'][i].replace('.', ''))
-        deaths[CCAA_REVERSE[df[-1]['Unnamed: 0'][i].replace('*', '')]] = int(df[-1]['Fallecidos'][i].split(" ")[0].replace('.', ''))
+        cases[CCAA_REVERSE[df[-2]['Unnamed: 0'][i].replace('*', '')]] = int(df[-2]['Unnamed: 1'][i].replace('.', '').replace('-', '0'))
+        deaths[CCAA_REVERSE[df[-1]['Unnamed: 0'][i].replace('*', '')]] = int(df[-1]['Fallecidos'][i].split(" ")[0].replace('.', '').replace('-','0'))
     
     copyfile(yesterday_file, today_file)
 
@@ -241,7 +243,7 @@ def create_custom_file(today, yesterday, today_file, yesterday_file):
         rows.append('{0},{1},,{2},,,,{3},'.format(ccaa, yesterday.strftime(DATE_FORMAT), cases[ccaa], deaths[ccaa]))
     
     with open(today_file, 'a') as f:
-        f.write("\n".join(rows) + "\n")
+        f.write("\n".join(rows))
 
 def get_pdf_id_for_date(date):
     # 14/5/2020 -> id: 105
@@ -258,9 +260,9 @@ def main():
     yesterday_file = get_path_for_date(yesterday)
     day_before_yesterday_file = get_path_for_date(day_before_yesterday)
 
-    if not os.path.exists(today_file):
+    if os.path.exists(today_file):
         try:
-            download_file(today_file)
+            # download_file(today_file)
 
             if os.path.getsize(today_file) <= os.path.getsize(yesterday_file):
                 logging.info("File has not been updated yet...")
@@ -274,7 +276,8 @@ def main():
         except Exception as e:
             logging.exception("Unhandled exception while trying to publish tweets. Today file will be removed...")
             if os.path.exists(today_file):
-                os.remove(today_file)
+                pass
+                # os.remove(today_file)
             send_dm_error()
     else:
         logging.info("File already exists...")
