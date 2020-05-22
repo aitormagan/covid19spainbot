@@ -230,6 +230,10 @@ def create_custom_file(today, yesterday, today_file, yesterday_file):
     deaths = {}
     df = tabula.read_pdf(MS_PDF_FORMAT.format(get_pdf_id_for_date(today)), pages='1,2')
     
+    for table in df:
+        for column in table:
+            table[column.replace('*', '').strip()] = table.pop(column)
+
     for i in range(2, 21):
         cases[CCAA_REVERSE[df[-2]['Unnamed: 0'][i].replace('*', '')]] = int(df[-2]['Unnamed: 1'][i].replace('.', '').replace('-', '0'))
         deaths[CCAA_REVERSE[df[-1]['Unnamed: 0'][i].replace('*', '')]] = int(df[-1]['Fallecidos'][i].split(" ")[0].replace('.', '').replace('-','0'))
