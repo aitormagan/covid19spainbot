@@ -9,6 +9,7 @@ import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 from shutil import copyfile
+from urllib.error import HTTPError
 
 FILES_FOLDER = "covid19_data"
 
@@ -98,7 +99,7 @@ def process_file(today, today_file, yesterday_file, day_before_yesterday_file):
 
 
 def get_cases_later_day_in_file(file_path):
-
+    print(file_path)
     cases_by_ccaa_and_date = defaultdict(dict)
     deaths_by_ccaa_and_date = defaultdict(dict)
     antibodies_by_ccaa_and_date = defaultdict(dict)
@@ -108,7 +109,7 @@ def get_cases_later_day_in_file(file_path):
             line_parts = line.split(",")
             ccaa = line_parts[0]
 
-            if len(ccaa) > 2:
+            if len(ccaa) != 2:
                 continue
             
             date = datetime.strptime(line_parts[1], DATE_FORMAT)
@@ -138,7 +139,7 @@ def get_summary(stat_type, today_info, yesterday_info, day_before_yesterday_info
 
 
 def get_summary_tweet(date, pcrs_summary, antibodies_summary, cases_summary, deaths_summary):
-    items = ["Resumen España a fecha {0}:".format(date.strftime(DATE_FORMAT)), "", pcrs_summary, antibodies_summary, cases_summary, deaths_summary]
+    items = ["Resumen España hasta el {0}:".format(date.strftime(DATE_FORMAT)), "", pcrs_summary, antibodies_summary, cases_summary, deaths_summary]
     return "\n".join(list(filter(lambda x: x is not None, items)))
 
 
@@ -248,15 +249,13 @@ def create_custom_file(today, yesterday, today_file, yesterday_file):
     with open(today_file, 'a') as f:
         f.write("\n".join(rows) + "\n")
 
-
 def get_pdf_id_for_date(date):
     # 14/5/2020 -> id: 105
     reference_date = datetime(2020, 5, 14)
     return 105 + (date - reference_date).days
 
-
 def main():
-        
+
     today = datetime.now()
     yesterday = today - timedelta(days=1)
     day_before_yesterday = today - timedelta(days=2)
@@ -270,18 +269,17 @@ def main():
             download_file(today_file)
 
             if os.path.getsize(today_file) <= os.path.getsize(yesterday_file):
-                logging.info("File has not been updated yet...")
+                logging.info("ISCIII file has not been updated yet...")
                 os.remove(today_file)
-                if today.hour >= 20:
-                    logging.info("Trying to get information using the PDFs...")
-                    create_custom_file(today, yesterday, today_file, yesterday_file)
-                    process_file(today, today_file, yesterday_file, day_before_yesterday_file)
-            else:
-                process_file(today, today_file, yesterday_file, day_before_yesterday_file)
+                logging.info("Trying to get information using the PDFs...")
+                create_custom_file(today, yesterday, today_file, yesterday_file)
+
+            process_file(today, today_file, yesterday_file, day_before_yesterday_file)
+
+        except HTTPError as e:
+            logging.warn("PDF is not availble yet...")
         except Exception as e:
-            logging.exception("Unhandled exception while trying to publish tweets. Today file will be removed...")
-            if os.path.exists(today_file):
-                os.remove(today_file)
+            logging.exception("Unhandled exception while trying to publish tweets")
             send_dm_error()
     else:
         logging.info("File already exists...")
