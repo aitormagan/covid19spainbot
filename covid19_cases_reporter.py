@@ -99,7 +99,6 @@ def process_file(today, today_file, yesterday_file, day_before_yesterday_file):
 
 
 def get_cases_later_day_in_file(file_path):
-    print(file_path)
     cases_by_ccaa_and_date = defaultdict(dict)
     deaths_by_ccaa_and_date = defaultdict(dict)
     antibodies_by_ccaa_and_date = defaultdict(dict)
