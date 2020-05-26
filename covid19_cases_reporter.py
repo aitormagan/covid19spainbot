@@ -229,15 +229,17 @@ def create_custom_file(today, yesterday, today_file, yesterday_file):
     cases = {}
     deaths = {}
     df = tabula.read_pdf(MS_PDF_FORMAT.format(get_pdf_id_for_date(today)), pages='1,2')
-    df = list(filter(lambda x: len(x) == 22, df))
+    df = list(filter(lambda x: len(x) >= 22, df))
 
     for table in df:
         for column in table:
             table[column.replace('*', '').strip()] = table.pop(column)
 
-    for i in range(2, 21):
+    for i in range(len(df[0]) - 19 - 1, len(df[0]) - 1):
         cases[CCAA_REVERSE[df[0]['Unnamed: 0'][i].replace('*', '')]] = int(df[0]['Unnamed: 1'][i].replace('.', '').replace('-', '0'))
-        deaths[CCAA_REVERSE[df[1]['Unnamed: 0'][i].replace('*', '')]] = int(df[1]['Fallecidos'][i].split(" ")[0].replace('.', '').replace('-','0'))
+
+    for i in range(len(df[1]) - 19 - 1, len(df[1]) - 1):
+        deaths[CCAA_REVERSE[df[1]['Unnamed: 0'][i].replace('*', '')]] = int(df[1]['Unnamed: 1'][i].split(" ")[0].replace('.', '').replace('-','0'))
 
     copyfile(yesterday_file, today_file)
 
@@ -247,6 +249,7 @@ def create_custom_file(today, yesterday, today_file, yesterday_file):
 
     with open(today_file, 'a') as f:
         f.write("\n".join(rows) + "\n")
+
 
 def get_pdf_id_for_date(date):
     # 14/5/2020 -> id: 105
