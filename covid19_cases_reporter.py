@@ -10,6 +10,8 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from shutil import copyfile
 from urllib.error import HTTPError
+from influxdb import InfluxDBClient
+
 
 FILES_FOLDER = "covid19_data"
 
@@ -85,8 +87,8 @@ def process_file(today, today_file, yesterday_file, day_before_yesterday_file):
     antibodies_available = today_antibodies and yesterday_antibodies
 
     publish_tweets_for_stat("PCR+", today, today_pcrs, yesterday_pcrs, day_before_yesterday_pcrs)
-    publish_tweets_for_stat("Muertes", today, today_deaths, yesterday_deaths, day_before_yesterday_deaths)
-    publish_tweets_for_stat("Ag+", today, today_antibodies, yesterday_antibodies, day_before_yesterday_antibodies) if antibodies_available else None
+    # publish_tweets_for_stat("Muertes", today, today_deaths, yesterday_deaths, day_before_yesterday_deaths)
+    # publish_tweets_for_stat("Ag+", today, today_antibodies, yesterday_antibodies, day_before_yesterday_antibodies) if antibodies_available else None
 
     pcrs_summary = get_summary("PCR+", today_pcrs, yesterday_pcrs, day_before_yesterday_pcrs)
     deaths_summary = get_summary("Muertes", today_deaths, yesterday_deaths, day_before_yesterday_deaths)
@@ -96,6 +98,8 @@ def process_file(today, today_file, yesterday_file, day_before_yesterday_file):
     publish_tweets([get_summary_tweet(today, pcrs_summary, antibodies_summary, cases_summary, deaths_summary)])
 
     logging.info("Tweets published correctly!")
+
+    insert_stats_in_influx(today, today_pcrs, yesterday_pcrs)
 
 
 def get_cases_later_day_in_file(file_path):
@@ -138,7 +142,8 @@ def get_summary(stat_type, today_info, yesterday_info, day_before_yesterday_info
 
 
 def get_summary_tweet(date, pcrs_summary, antibodies_summary, cases_summary, deaths_summary):
-    items = ["Resumen España hasta el {0}:".format(date.strftime(DATE_FORMAT)), "", pcrs_summary, antibodies_summary, cases_summary, deaths_summary]
+    # items = ["Resumen España hasta el {0}:".format(date.strftime(DATE_FORMAT)), "", pcrs_summary, antibodies_summary, cases_summary, deaths_summary]
+    items = ["Resumen España hasta el {0}:".format(date.strftime(DATE_FORMAT)), "", pcrs_summary, "", "Consulta el gráfico con la evolución en: http://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1"]
     return "\n".join(list(filter(lambda x: x is not None, items)))
 
 
@@ -226,6 +231,16 @@ def get_twitter_api():
 
 
 def create_custom_file(today, yesterday, today_file, yesterday_file):
+    try:
+        create_custom_file1(today, yesterday, today_file, yesterday_file)
+    except HTTPError as e:
+        raise e
+    except:
+        logging.exception("Impossible to obtain info. using the default read_pdf function. Trying with specific area...")
+        create_custom_file2(today, yesterday, today_file, yesterday_file)
+
+
+def create_custom_file1(today, yesterday, today_file, yesterday_file):
     cases = {}
     deaths = {}
     df = tabula.read_pdf(MS_PDF_FORMAT.format(get_pdf_id_for_date(today)), pages='1,2')
@@ -250,11 +265,56 @@ def create_custom_file(today, yesterday, today_file, yesterday_file):
     with open(today_file, 'a') as f:
         f.write("\n".join(rows) + "\n")
 
+def create_custom_file2(today, yesterday, today_file, yesterday_file):
+    cases = {}
+    df = tabula.read_pdf(MS_PDF_FORMAT.format(get_pdf_id_for_date(today)), pages='1', area=(233, 65, 233+301, 65+767))
+    df = list(filter(lambda x: len(x) >= 22, df))
+
+    for table in df:
+        for column in table:
+            table[column.replace('*', '').strip()] = table.pop(column)
+
+    for i in range(5, 24):
+        cases[CCAA_REVERSE[df[0]['Unnamed: 0'][i].replace('*', '')]] = int(df[0]['Unnamed: 1'][i].replace('.', '').replace('-', '0'))
+
+    copyfile(yesterday_file, today_file)
+
+    rows = []
+    for ccaa in cases:
+        rows.append('{0},{1},,{2},,,,0,'.format(ccaa, yesterday.strftime(DATE_FORMAT), cases[ccaa]))
+
+    with open(today_file, 'a') as f:
+        f.write("\n".join(rows) + "\n")
+
 
 def get_pdf_id_for_date(date):
     # 14/5/2020 -> id: 105
     reference_date = datetime(2020, 5, 14)
     return 105 + (date - reference_date).days
+
+
+def insert_stats_in_influx(today, today_pcrs, yesterday_pcrs):
+    cases_by_day = {}
+    for ccaa in today_pcrs:
+        diff = today_pcrs[ccaa] - yesterday_pcrs[ccaa]
+        cases_by_day[ccaa] = diff
+
+    influx_data = []
+    for ccaa in cases_by_day:
+        influx_data.append({
+            "measurement": "pcrs",
+            "time": today.isoformat(),
+            "tags": {
+                "ccaa": CCAAS[ccaa]
+            },
+            "fields": {
+                "value": cases_by_day[ccaa]
+            }
+        })
+
+    client = InfluxDBClient(os.environ.get("INFLUX_HOST", "localhost"), 8086, None, None, 'covid19')
+    client.write_points(influx_data)
+
 
 def main():
 
@@ -279,7 +339,7 @@ def main():
             process_file(today, today_file, yesterday_file, day_before_yesterday_file)
 
         except HTTPError as e:
-            logging.warn("PDF is not availble yet...")
+            logging.info("PDF is not availble yet...")
         except Exception as e:
             logging.exception("Unhandled exception while trying to publish tweets")
             send_dm_error()
