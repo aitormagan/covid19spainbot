@@ -87,7 +87,7 @@ def process_file(today, today_file, yesterday_file, day_before_yesterday_file):
     antibodies_available = today_antibodies and yesterday_antibodies
 
     publish_tweets_for_stat("PCR+", today, today_pcrs, yesterday_pcrs, day_before_yesterday_pcrs)
-    # publish_tweets_for_stat("Muertes", today, today_deaths, yesterday_deaths, day_before_yesterday_deaths)
+    publish_tweets_for_stat("Muertes", today, today_deaths, yesterday_deaths, day_before_yesterday_deaths)
     # publish_tweets_for_stat("Ag+", today, today_antibodies, yesterday_antibodies, day_before_yesterday_antibodies) if antibodies_available else None
 
     pcrs_summary = get_summary("PCR+", today_pcrs, yesterday_pcrs, day_before_yesterday_pcrs)
@@ -99,8 +99,7 @@ def process_file(today, today_file, yesterday_file, day_before_yesterday_file):
 
     logging.info("Tweets published correctly!")
 
-    insert_stats_in_influx(today, today_pcrs, yesterday_pcrs)
-
+    insert_stats_in_influx(today - timedelta(days=1), today_pcrs, yesterday_pcrs)
 
 def get_cases_later_day_in_file(file_path):
     cases_by_ccaa_and_date = defaultdict(dict)
@@ -143,7 +142,7 @@ def get_summary(stat_type, today_info, yesterday_info, day_before_yesterday_info
 
 def get_summary_tweet(date, pcrs_summary, antibodies_summary, cases_summary, deaths_summary):
     # items = ["Resumen España hasta el {0}:".format(date.strftime(DATE_FORMAT)), "", pcrs_summary, antibodies_summary, cases_summary, deaths_summary]
-    items = ["Resumen España hasta el {0}:".format(date.strftime(DATE_FORMAT)), "", pcrs_summary, "", "Consulta el gráfico con la evolución en: http://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1"]
+    items = ["Resumen España hasta el {0}:".format(date.strftime(DATE_FORMAT)), "", pcrs_summary, deaths_summary, "", "Consulta el gráfico con la evolución en: http://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1"]
     return "\n".join(list(filter(lambda x: x is not None, items)))
 
 
@@ -293,7 +292,7 @@ def get_pdf_id_for_date(date):
     return 105 + (date - reference_date).days
 
 
-def insert_stats_in_influx(today, today_pcrs, yesterday_pcrs):
+def insert_stats_in_influx(date, today_pcrs, yesterday_pcrs):
     cases_by_day = {}
     for ccaa in today_pcrs:
         diff = today_pcrs[ccaa] - yesterday_pcrs[ccaa]
@@ -303,7 +302,7 @@ def insert_stats_in_influx(today, today_pcrs, yesterday_pcrs):
     for ccaa in cases_by_day:
         influx_data.append({
             "measurement": "pcrs",
-            "time": today.isoformat(),
+            "time": date.date().isoformat(),
             "tags": {
                 "ccaa": CCAAS[ccaa]
             },
