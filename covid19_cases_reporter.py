@@ -99,7 +99,9 @@ def process_file(today, today_file, yesterday_file, day_before_yesterday_file):
 
     logging.info("Tweets published correctly!")
 
-    insert_stats_in_influx(today - timedelta(days=1), today_pcrs, yesterday_pcrs)
+    insert_stats_in_influx("pcrs", today - timedelta(days=1), today_pcrs, yesterday_pcrs)
+    insert_stats_in_influx("deaths", today - timedelta(days=1), today_deaths, yesterday_deaths)
+
 
 def get_cases_later_day_in_file(file_path):
     cases_by_ccaa_and_date = defaultdict(dict)
@@ -142,7 +144,7 @@ def get_summary(stat_type, today_info, yesterday_info, day_before_yesterday_info
 
 def get_summary_tweet(date, pcrs_summary, antibodies_summary, cases_summary, deaths_summary):
     # items = ["Resumen España hasta el {0}:".format(date.strftime(DATE_FORMAT)), "", pcrs_summary, antibodies_summary, cases_summary, deaths_summary]
-    items = ["Resumen España hasta el {0}:".format(date.strftime(DATE_FORMAT)), "", pcrs_summary, deaths_summary, "", "Consulta el gráfico con la evolución en: http://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1"]
+    items = ["Resumen España hasta el {0}:".format(date.strftime(DATE_FORMAT)), "", pcrs_summary, deaths_summary, "", "Evolución ➡️ https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1", "Comparación ➡️ https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1"]
     return "\n".join(list(filter(lambda x: x is not None, items)))
 
 
@@ -292,7 +294,7 @@ def get_pdf_id_for_date(date):
     return 105 + (date - reference_date).days
 
 
-def insert_stats_in_influx(date, today_pcrs, yesterday_pcrs):
+def insert_stats_in_influx(measurement, date, today_pcrs, yesterday_pcrs):
     cases_by_day = {}
     for ccaa in today_pcrs:
         diff = today_pcrs[ccaa] - yesterday_pcrs[ccaa]
@@ -301,7 +303,7 @@ def insert_stats_in_influx(date, today_pcrs, yesterday_pcrs):
     influx_data = []
     for ccaa in cases_by_day:
         influx_data.append({
-            "measurement": "pcrs",
+            "measurement": measurement,
             "time": date.date().isoformat(),
             "tags": {
                 "ccaa": CCAAS[ccaa]
@@ -354,3 +356,4 @@ if __name__ == "__main__":
     os.chdir(os.path.dirname(__file__))
 
     main()
+
