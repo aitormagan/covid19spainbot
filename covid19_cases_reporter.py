@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from shutil import copyfile
 from urllib.error import HTTPError
 from influxdb import InfluxDBClient
+import math
 
 
 FILES_FOLDER = "covid19_data"
@@ -290,8 +291,10 @@ def create_custom_file2(today, yesterday, today_file, yesterday_file):
 
 def get_pdf_id_for_date(date):
     # 14/5/2020 -> id: 105
-    reference_date = datetime(2020, 5, 14)
-    return 105 + (date - reference_date).days
+    # Weekends starting on 4/7/2020 no reports are published
+    date_with_id_105 = datetime(2020, 5, 14)
+    weekends = math.ceil((date - datetime(2020, 7, 4)).days / 7)
+    return 105 + (date - date_with_id_105).days - weekends * 2
 
 
 def insert_stats_in_influx(measurement, date, today_pcrs, yesterday_pcrs):
@@ -317,11 +320,23 @@ def insert_stats_in_influx(measurement, date, today_pcrs, yesterday_pcrs):
     client.write_points(influx_data)
 
 
+def substract_days_ignoring_weekends(initial_date, days_to_substract):
+    result = initial_date
+
+    while days_to_substract > 0:
+        result = result - timedelta(days=1)
+
+        if result.weekday() < 5:
+            days_to_substract -= 1
+
+    return result
+
+
 def main():
 
     today = datetime.now()
-    yesterday = today - timedelta(days=1)
-    day_before_yesterday = today - timedelta(days=2)
+    yesterday = substract_days_ignoring_weekends(today, 1)
+    day_before_yesterday = substract_days_ignoring_weekends(today, 2)
 
     today_file = get_path_for_date(today)
     yesterday_file = get_path_for_date(yesterday)
@@ -356,4 +371,3 @@ if __name__ == "__main__":
     os.chdir(os.path.dirname(__file__))
 
     main()
-
