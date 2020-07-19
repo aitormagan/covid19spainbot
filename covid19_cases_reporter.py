@@ -75,7 +75,7 @@ def get_path_for_date(date):
     return os.path.join(FILES_FOLDER, "{0}.csv".format(date.strftime("%Y%m%d")))
 
 
-def process_file(today, today_file, yesterday_file, day_before_yesterday_file):
+def process_file(today, yesterday, today_file, yesterday_file, day_before_yesterday_file):
     today_pcrs, today_deaths, today_antibodies = get_cases_later_day_in_file(today_file)
     yesterday_pcrs, yesterday_deaths, yesterday_antibodies = get_cases_later_day_in_file(yesterday_file)
     day_before_yesterday_pcrs, day_before_yesterday_deaths, day_before_yesterday_antibodies = get_cases_later_day_in_file(day_before_yesterday_file)
@@ -89,7 +89,7 @@ def process_file(today, today_file, yesterday_file, day_before_yesterday_file):
 
     publish_tweets_for_stat("PCR+", today, today_pcrs, yesterday_pcrs, day_before_yesterday_pcrs)
     publish_tweets_for_stat("Muertes", today, today_deaths, yesterday_deaths, day_before_yesterday_deaths)
-    # publish_tweets_for_stat("Ag+", today, today_antibodies, yesterday_antibodies, day_before_yesterday_antibodies) if antibodies_available else None
+    # publish_tweets_for_stat("Ag+", yesterday, today_antibodies, yesterday_antibodies, day_before_yesterday_antibodies) if antibodies_available else None
 
     pcrs_summary = get_summary("PCR+", today_pcrs, yesterday_pcrs, day_before_yesterday_pcrs)
     deaths_summary = get_summary("Muertes", today_deaths, yesterday_deaths, day_before_yesterday_deaths)
@@ -110,13 +110,13 @@ def get_cases_later_day_in_file(file_path):
     antibodies_by_ccaa_and_date = defaultdict(dict)
     with codecs.open(file_path, "r", "iso-8859-1") as f:
         for line in f:
-            
+
             line_parts = line.split(",")
             ccaa = line_parts[0]
 
             if len(ccaa) != 2:
                 continue
-            
+
             date = datetime.strptime(line_parts[1], DATE_FORMAT)
             cases = int(line_parts[3])
             antibodies = int(line_parts[4]) if line_parts[4] else None
@@ -145,7 +145,7 @@ def get_summary(stat_type, today_info, yesterday_info, day_before_yesterday_info
 
 def get_summary_tweet(date, pcrs_summary, antibodies_summary, cases_summary, deaths_summary):
     # items = ["Resumen España hasta el {0}:".format(date.strftime(DATE_FORMAT)), "", pcrs_summary, antibodies_summary, cases_summary, deaths_summary]
-    items = ["Resumen España hasta el {0}:".format(date.strftime(DATE_FORMAT)), "", pcrs_summary, deaths_summary, "", "Evolución ➡️ https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1", "Comparación ➡️ https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1"]
+    items = ["Resumen España al finalizar el {0}:".format((date - timedelta(1)).strftime(DATE_FORMAT)), "", pcrs_summary, deaths_summary, "", "Evolución ➡️ https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1", "Comparación ➡️ https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1"]
     return "\n".join(list(filter(lambda x: x is not None, items)))
 
 
@@ -164,7 +164,7 @@ def get_tweet_sentences(today_info, yesterday_info, day_before_yesterday_info):
         ccaa_yesterday_total = yesterday_info[ccaa] - day_before_yesterday_info[ccaa] if ccaa in yesterday_info and ccaa in day_before_yesterday_info else None
         sentence = "{0}: {1:+} {2} {3}".format(CCAAS[ccaa], ccaa_today_total, get_impact_string(ccaa_today_total, ccaa), get_tendency_emoji(ccaa_today_total, ccaa_yesterday_total))
         sentences.append(' '.join(sentence.split()))
-    
+
     return sentences
 
 
@@ -187,22 +187,30 @@ def get_impact_string(total_cases, ccaa=None):
 
 def get_tweets(stat_type, date, sentences):
     tweets = []
-    current_tweet = ""
-    header_format = "{0} reportadas hasta el {1} ({2}/{3}):\n\n"
+    
+    if date.weekday() in [5, 6]:
+        monday = date + timedelta(0 - date.weekday())
+        sunday = date + timedelta(6 - date.weekday())
+        header_format = "{0} reportadas la semana del {1} al {2}".format(stat_type, monday.strftime(DATE_FORMAT), sunday.strftime(DATE_FORMAT))
+    else:
+        header_format = "{0} reportadas el{1}{2} ".format(stat_type, " fin de semana del " if date.weekday() == 0 else " ", (date - timedelta(1)).strftime(DATE_FORMAT))
+    
+    header_format += " ({0}/{1}):\n\n"
     # We assume that the total amount of tweets will be 9 or less...
-    header_length = tweet_length(header_format.format(stat_type, date.strftime(DATE_FORMAT), 0, 0))
+    header_length = tweet_length(header_format.format(stat_type, (date - timedelta(1)).strftime(DATE_FORMAT), 0, 0))
 
+    current_tweet = ""
     for sentence in sentences:
         # Twitter counts emoji as double characters...
         if tweet_length(current_tweet) + tweet_length(sentence) + header_length > 280:
             tweets.append(current_tweet.strip("\n"))
             current_tweet = ""
-        
+
         current_tweet += sentence + "\n"
 
     tweets.append(current_tweet.strip("\n"))
 
-    return list(map(lambda x: header_format.format(stat_type, date.strftime(DATE_FORMAT), x + 1, len(tweets)) + tweets[x], range(0, len(tweets))))
+    return list(map(lambda x: header_format.format(x + 1, len(tweets)) + tweets[x], range(0, len(tweets))))
 
 
 def tweet_length(sentence):
@@ -232,17 +240,17 @@ def get_twitter_api():
     return tweepy.API(auth)
 
 
-def create_custom_file(today, yesterday, today_file, yesterday_file):
+def create_custom_file(today, yesterday, today_file):
     try:
-        create_custom_file1(today, yesterday, today_file, yesterday_file)
+        create_custom_file1(today, yesterday, today_file)
     except HTTPError as e:
         raise e
     except:
         logging.exception("Impossible to obtain info. using the default read_pdf function. Trying with specific area...")
-        create_custom_file2(today, yesterday, today_file, yesterday_file)
+        create_custom_file2(today, yesterday, today_file)
 
 
-def create_custom_file1(today, yesterday, today_file, yesterday_file):
+def create_custom_file1(today, yesterday, today_file):
     cases = {}
     deaths = {}
     df = tabula.read_pdf(MS_PDF_FORMAT.format(get_pdf_id_for_date(today)), pages='1,2')
@@ -258,16 +266,14 @@ def create_custom_file1(today, yesterday, today_file, yesterday_file):
     for i in range(len(df[1]) - 19 - 1, len(df[1]) - 1):
         deaths[CCAA_REVERSE[df[1]['Unnamed: 0'][i].replace('*', '')]] = int(df[1]['Unnamed: 1'][i].split(" ")[0].replace('.', '').replace('-','0'))
 
-    copyfile(yesterday_file, today_file)
-
     rows = []
     for ccaa in cases:
         rows.append('{0},{1},,{2},,,,{3},'.format(ccaa, yesterday.strftime(DATE_FORMAT), cases[ccaa], deaths[ccaa]))
 
-    with open(today_file, 'a') as f:
+    with open(today_file, 'w+') as f:
         f.write("\n".join(rows) + "\n")
 
-def create_custom_file2(today, yesterday, today_file, yesterday_file):
+def create_custom_file2(today, yesterday, today_file):
     cases = {}
     df = tabula.read_pdf(MS_PDF_FORMAT.format(get_pdf_id_for_date(today)), pages='1', area=(233, 65, 233+301, 65+767))
     df = list(filter(lambda x: len(x) >= 22, df))
@@ -279,22 +285,21 @@ def create_custom_file2(today, yesterday, today_file, yesterday_file):
     for i in range(5, 24):
         cases[CCAA_REVERSE[df[0]['Unnamed: 0'][i].replace('*', '')]] = int(df[0]['Unnamed: 1'][i].replace('.', '').replace('-', '0'))
 
-    copyfile(yesterday_file, today_file)
-
     rows = []
     for ccaa in cases:
         rows.append('{0},{1},,{2},,,,0,'.format(ccaa, yesterday.strftime(DATE_FORMAT), cases[ccaa]))
 
-    with open(today_file, 'a') as f:
+    with open(today_file, 'w+') as f:
         f.write("\n".join(rows) + "\n")
 
 
 def get_pdf_id_for_date(date):
     # 14/5/2020 -> id: 105
     # Weekends starting on 4/7/2020 no reports are published
-    date_with_id_105 = datetime(2020, 5, 14)
-    weekends = math.ceil((date - datetime(2020, 7, 4)).days / 7)
-    return 105 + (date - date_with_id_105).days - weekends * 2
+    reference_date = datetime(2020, 5, 14)
+    intial_weekend_without_report = datetime(2020, 7, 4)
+    weekends = math.ceil((date - intial_weekend_without_report).days / 7)
+    return 105 + (date - reference_date).days - weekends * 2
 
 
 def insert_stats_in_influx(measurement, date, today_pcrs, yesterday_pcrs):
@@ -344,23 +349,13 @@ def main():
 
     if not os.path.exists(today_file):
         try:
-            download_file(today_file)
-
-            if os.path.getsize(today_file) <= os.path.getsize(yesterday_file):
-                logging.info("ISCIII file has not been updated yet...")
-                os.remove(today_file)
-                logging.info("Trying to get information using the PDFs...")
-                create_custom_file(today, yesterday, today_file, yesterday_file)
-
-            process_file(today, today_file, yesterday_file, day_before_yesterday_file)
-
+            create_custom_file(today, yesterday, today_file)
+            process_file(today, yesterday, today_file, yesterday_file, day_before_yesterday_file)
         except HTTPError as e:
             logging.info("PDF is not availble yet...")
         except Exception as e:
             logging.exception("Unhandled exception while trying to publish tweets")
             send_dm_error()
-    else:
-        logging.info("File already exists...")
 
 
 
