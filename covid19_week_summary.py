@@ -45,4 +45,8 @@ def main():
     publish_tweets([get_week_summary_tweet(date, pcrs_summary, deaths_summary)])
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s %(levelname)s %(message)s',
+                        stream=sys.stdout)
+
     main()
