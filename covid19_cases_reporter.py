@@ -100,8 +100,8 @@ def process_file(today, yesterday, today_file, yesterday_file, day_before_yester
 
     logging.info("Tweets published correctly!")
 
-    insert_stats_in_influx("pcrs", today - timedelta(days=1), today_pcrs, yesterday_pcrs)
-    insert_stats_in_influx("deaths", today - timedelta(days=1), today_deaths, yesterday_deaths)
+    insert_stats_in_influx("pcrs", today), today_pcrs, yesterday_pcrs)
+    insert_stats_in_influx("deaths", today), today_deaths, yesterday_deaths)
 
 
 def get_cases_later_day_in_file(file_path):
