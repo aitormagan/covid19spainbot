@@ -1,12 +1,14 @@
 # Covid 19 Spain Bot
 
-Este script publica tweets con el número de nuevas PCR+ de SARS-CoV-2 en España agrupados por comunidad autónoma. 
+Script que publica en Twitter los nuevos PCR+ y fallecimientos provocados por el SARS-CoV-2 en España y disgregado por
+las diferentes comunidades autónomas.
 
-Esta información es pública y hay muchas páginas donde puede verse. Sin embargo, debido a la complejidad con la que la Comunidad de Madrid publica los datos (actualizando la serie histórica), parece que el número de casos en dicha comunidad son menos de los reales. La intención de este bot es precisamente esa: tener el dato real de incremento de casos de la misma forma que se tiene para el resto de comunidades autónomas.
+A diferencia de los datos del ministerio, que únicamente da las PCR+ que se ejecutaron y obtuvieron resultado el día 
+anterior, este script comprueba la diferencia de datos entre el reporte del día actual y el anterior, para notificar el 
+número total de nuevos positivos del día.
 
-El funcionamiento es sencillo:
+➡️ Bot: [https://twitter.com/CoronaSpainBot](https://twitter.com/CoronaSpainBot)
 
-1. Se baja el fichero de la web del Instituto de Salud Carlos III
-2. Comprueba si el fichero está actualizado
-3. Si lo está, compara los datos con el día anterior
-4. Publica los tweets (con un límite de 240 caracteres)
+➡️ Dashboard Evolución: [https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1](https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1)
+
+➡️ Dashboard Comparación: [https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1](https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1)
