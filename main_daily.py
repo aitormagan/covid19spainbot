@@ -16,7 +16,7 @@ influx = Influx()
 def main():
 
     today = datetime.now()
-    yesterday = substract_days_ignoring_weekends(today, 1)
+    yesterday = subtract_days_ignoring_weekends(today, 1)
 
     data = influx.get_stat_group_by_day(Measurement.PCRS, today)
 
@@ -32,7 +32,7 @@ def main():
             twitter.send_dm_error()
 
 
-def substract_days_ignoring_weekends(initial_date, days_to_substract):
+def subtract_days_ignoring_weekends(initial_date, days_to_substract):
     result = initial_date
 
     while days_to_substract > 0:
@@ -68,7 +68,7 @@ def update_database(today, yesterday):
 def get_today_numbers(today_accumulated, yesterday_accumulated):
     today_new = {}
     for ccaa in today_accumulated:
-        today_new[ccaa] = today_accumulated[ccaa] - yesterday_accumulated[ccaa]
+        today_new[ccaa] = today_accumulated[ccaa] - yesterday_accumulated.get(ccaa, 0)
 
     return today_new
 
@@ -92,8 +92,8 @@ def publish_report(today, yesterday):
 
 
 def get_header(stat_type, date):
-    return "{0} reportadas el{1}{2} ".format(stat_type, " fin de semana del " if date.weekday() == 0 else " ",
-                                             (date - timedelta(1)).strftime(DATE_FORMAT))
+    return "{0} reportadas el{1}{2}".format(stat_type, " fin de semana del " if date.weekday() == 0 else " ",
+                                            (date - timedelta(1)).strftime(DATE_FORMAT))
 
 
 def get_summary_tweet(date, pcrs_summary, deaths_summary):
