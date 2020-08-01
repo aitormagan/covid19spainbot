@@ -37,8 +37,8 @@ class SpainCovid19MinistryReport:
         return 105 + (date - reference_date).days - weekends * 2
 
     def get_column_data(self, column):
-        ccaas_column = self.data_frame['Unnamed: 0']
-        first_ccaa_position = ccaas_column[ccaas_column == 'Andalucía'].index[0]
+        ccaas_column = self.data_frame['Unnamed: 0'].astype(str)
+        first_ccaa_position = ccaas_column.loc[ccaas_column.str.startswith('Andalucía', na=False)].index[0]
 
         cases = {}
         for i in range(first_ccaa_position, first_ccaa_position + 19):
