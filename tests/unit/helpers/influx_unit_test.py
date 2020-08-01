@@ -1,13 +1,13 @@
 from datetime import datetime
 import unittest
 from unittest.mock import patch, MagicMock, call
-from bot.helpers.influx import Influx, Measurement
+from helpers.influx import Influx, Measurement
 
 
 class InfluxUnitTest(unittest.TestCase):
 
-    @patch("bot.helpers.influx.InfluxDBClient")
-    @patch("bot.helpers.influx.os")
+    @patch("helpers.influx.InfluxDBClient")
+    @patch("helpers.influx.os")
     def test_given_no_client_defined_when_access_client_then_client_build(self, os_mock, influxdbclient_mock):
         influx = Influx()
 

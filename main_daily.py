@@ -2,11 +2,11 @@ import sys
 import logging
 from datetime import datetime, timedelta
 from urllib.error import HTTPError
-from bot.helpers.twitter import Twitter
-from bot.helpers.influx import Influx, Measurement
-from bot.helpers.ministry_report import SpainCovid19MinistryReport
-from bot.helpers.reports import get_human_report, get_human_summary
-from bot.constants import DATE_FORMAT
+from helpers.twitter import Twitter
+from helpers.influx import Influx, Measurement
+from helpers.ministry_report import SpainCovid19MinistryReport
+from helpers.reports import get_human_report, get_human_summary
+from constants import DATE_FORMAT
 
 
 twitter = Twitter()

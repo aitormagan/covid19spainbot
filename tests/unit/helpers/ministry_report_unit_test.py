@@ -2,8 +2,8 @@ import unittest
 from unittest.mock import MagicMock, patch
 from datetime import datetime
 from pandas import DataFrame
-from bot.helpers.ministry_report import SpainCovid19MinistryReport
-from bot.helpers.spain_geography import CCAA_POPULATION
+from helpers.ministry_report import SpainCovid19MinistryReport
+from helpers.spain_geography import CCAA_POPULATION
 
 
 class SpainCovid19MinistryReportUnitTest(unittest.TestCase):
@@ -23,8 +23,8 @@ class SpainCovid19MinistryReportUnitTest(unittest.TestCase):
     def test_given_13_7_when_get_id_then_161_returned(self):
         self.assertEqual(SpainCovid19MinistryReport.get_pdf_id_for_date(datetime(2020, 7, 13)), 161)
 
-    @patch("bot.helpers.ministry_report.tabula")
-    @patch("bot.helpers.ministry_report.SpainCovid19MinistryReport.get_pdf_id_for_date")
+    @patch("helpers.ministry_report.tabula")
+    @patch("helpers.ministry_report.SpainCovid19MinistryReport.get_pdf_id_for_date")
     def test_given_no_data_frame_acceded_when_access_then_tabula_used(self, get_pdf_for_id_mock, tabula_mock):
         date = datetime(2020, 5, 5)
         page = "1"

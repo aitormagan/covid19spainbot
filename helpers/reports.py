@@ -1,4 +1,4 @@
-from bot.helpers.spain_geography import get_impact_string
+from helpers.spain_geography import get_impact_string
 
 
 def get_human_report(today_data, yesterday_data):
