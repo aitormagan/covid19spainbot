@@ -13,10 +13,10 @@ twitter = Twitter()
 def main():
     date = datetime.now()
 
-    pcrs_current_week = influx.get_week_report(Measurement.PCRS, date)
-    pcrs_previous_week = influx.get_week_report(Measurement.PCRS, date - timedelta(7))
-    deaths_current_week = influx.get_week_report(Measurement.DEATHS, date)
-    deaths_previous_week = influx.get_week_report(Measurement.DEATHS, date - timedelta(7))
+    pcrs_current_week = influx.get_stat_group_by_week(Measurement.PCRS, date)
+    pcrs_previous_week = influx.get_stat_group_by_week(Measurement.PCRS, date - timedelta(7))
+    deaths_current_week = influx.get_stat_group_by_week(Measurement.DEATHS, date)
+    deaths_previous_week = influx.get_stat_group_by_week(Measurement.DEATHS, date - timedelta(7))
 
     pcrs_report = get_human_report(pcrs_current_week, pcrs_previous_week)
     deaths_report = get_human_report(deaths_current_week, deaths_previous_week)
@@ -24,7 +24,7 @@ def main():
     twitter.publish_tweets(pcrs_report, get_header("PCR+", date))
     twitter.publish_tweets(deaths_report, get_header("Muertes", date))
 
-    today_pcrs_accumulated, today_deaths_accumulated = influx.get_all_stats_accumulated_by_day(date)
+    today_pcrs_accumulated, today_deaths_accumulated = influx.get_all_stats_accumulated_until_day(date)
     pcrs_summary = get_human_summary("PCR+", pcrs_current_week, pcrs_previous_week, today_pcrs_accumulated)
     deaths_summary = get_human_summary("Muertes", deaths_current_week, deaths_previous_week, today_deaths_accumulated)
 

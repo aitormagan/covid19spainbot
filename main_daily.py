@@ -18,7 +18,7 @@ def main():
     today = datetime.now()
     yesterday = substract_days_ignoring_weekends(today, 1)
 
-    data = influx.get_day_stat(Measurement.PCRS, today)
+    data = influx.get_stat_group_by_day(Measurement.PCRS, today)
 
     if not data:
         try:
@@ -51,8 +51,8 @@ def update_database(today, yesterday):
     accumulated_pcrs_today = pcrs_report.get_column_data(1)
     accumulated_deaths_today = deaths_report.get_column_data(3)
 
-    accumulated_pcrs_yesterday = influx.get_day_accumulated_stat(Measurement.PCRS, yesterday)
-    accumulated_deaths_yesterday = influx.get_day_accumulated_stat(Measurement.DEATHS, yesterday)
+    accumulated_pcrs_yesterday = influx.get_stat_accumulated_until_day(Measurement.PCRS, yesterday)
+    accumulated_deaths_yesterday = influx.get_stat_accumulated_until_day(Measurement.DEATHS, yesterday)
 
     today_pcrs = get_today_numbers(accumulated_pcrs_today, accumulated_pcrs_yesterday)
     today_deaths = get_today_numbers(accumulated_deaths_today, accumulated_deaths_yesterday)
@@ -74,8 +74,8 @@ def get_today_numbers(today_accumulated, yesterday_accumulated):
 
 
 def publish_report(today, yesterday):
-    today_pcrs, today_deaths, _ = influx.get_all_stats_by_day(today)
-    yesterday_pcrs, yesterday_deaths, _ = influx.get_all_stats_by_day(yesterday)
+    today_pcrs, today_deaths, _ = influx.get_all_stats_group_by_day(today)
+    yesterday_pcrs, yesterday_deaths, _ = influx.get_all_stats_group_by_day(yesterday)
 
     pcrs_report = get_human_report(today_pcrs, yesterday_pcrs)
     deaths_report = get_human_report(today_deaths, yesterday_deaths)
@@ -83,7 +83,7 @@ def publish_report(today, yesterday):
     twitter.publish_tweets(pcrs_report, get_header("PCR+", today))
     twitter.publish_tweets(deaths_report, get_header("Muertes", today))
 
-    today_pcrs_accumulated, today_deaths_accumulated = influx.get_all_stats_accumulated_by_day(today)
+    today_pcrs_accumulated, today_deaths_accumulated = influx.get_all_stats_accumulated_until_day(today)
     pcrs_summary = get_human_summary("PCR+", today_pcrs, yesterday_pcrs, today_pcrs_accumulated)
     deaths_summary = get_human_summary("Muertes", today_deaths, yesterday_deaths, today_deaths_accumulated)
     twitter.publish_tweets([get_summary_tweet(today, pcrs_summary, deaths_summary)])

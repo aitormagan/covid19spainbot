@@ -40,7 +40,7 @@ class Influx:
 
         self.client.write_points(influx_data)
 
-    def get_week_report(self, measurement: Measurement, week_day):
+    def get_stat_group_by_week(self, measurement: Measurement, week_day):
         week_monday = week_day + timedelta(0 - week_day.weekday())
         week_sunday = week_day + timedelta(6 - week_day.weekday())
         query = f"SELECT sum(value) FROM {measurement.value} where " \
@@ -48,12 +48,12 @@ class Influx:
                 f"time <='{week_sunday.strftime(self.DATE_FORMAT)}' group by ccaa;"
         return self._get_report(query)
 
-    def get_day_stat(self, measurement: Measurement, day):
+    def get_stat_group_by_day(self, measurement: Measurement, day):
         query = f"SELECT sum(value) FROM {measurement.value} where " \
                 f"time ='{day.strftime(self.DATE_FORMAT)}' group by ccaa;"
         return self._get_report(query)
 
-    def get_day_accumulated_stat(self, measurement: Measurement, day):
+    def get_stat_accumulated_until_day(self, measurement: Measurement, day):
         query = f"SELECT sum(value) FROM {measurement.value} where " \
                 f"time <='{day.strftime(self.DATE_FORMAT)}' group by ccaa;"
         return self._get_report(query)
@@ -68,15 +68,15 @@ class Influx:
 
         return ccaa_map
 
-    def get_all_stats_by_day(self, day):
-        pcrs = self.get_day_stat(Measurement.PCRS, day)
-        deaths = self.get_day_stat(Measurement.DEATHS, day)
-        pcrs_last_24h = self.get_day_stat(Measurement.PCRS_LAST_24H, day)
+    def get_all_stats_group_by_day(self, day):
+        pcrs = self.get_stat_group_by_day(Measurement.PCRS, day)
+        deaths = self.get_stat_group_by_day(Measurement.DEATHS, day)
+        pcrs_last_24h = self.get_stat_group_by_day(Measurement.PCRS_LAST_24H, day)
 
         return pcrs, deaths, pcrs_last_24h
 
-    def get_all_stats_accumulated_by_day(self, day):
-        pcrs = self.get_day_accumulated_stat(Measurement.PCRS, day)
-        deaths = self.get_day_accumulated_stat(Measurement.DEATHS, day)
+    def get_all_stats_accumulated_until_day(self, day):
+        pcrs = self.get_stat_accumulated_until_day(Measurement.PCRS, day)
+        deaths = self.get_stat_accumulated_until_day(Measurement.DEATHS, day)
 
         return pcrs, deaths
