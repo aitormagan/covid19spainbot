@@ -177,6 +177,9 @@ class MainDailyUnitTest(unittest.TestCase):
                                                  call("Muertes", today_deaths_report, yesterday_deaths_report,
                                                       today_deaths_accumulated_report)])
 
+        get_summary_tweet_mock.assert_called_once_with(today, get_human_summary_mock.return_value,
+                                                       get_human_summary_mock.return_value)
+
         publish_tweet_call = call(get_report_by_ccaa_mock.return_value, get_header_mock.return_value)
         twitter_mock.publish_tweets.assert_has_calls([publish_tweet_call, publish_tweet_call,
                                                       call([get_summary_tweet_mock.return_value])])
