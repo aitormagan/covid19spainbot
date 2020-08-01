@@ -3,7 +3,7 @@ import sys
 from datetime import timedelta, datetime
 from helpers.influx import Influx, Measurement
 from helpers.twitter import Twitter
-from helpers.reports import get_human_report, get_human_summary
+from helpers.reports import get_report_by_ccaa, get_human_summary
 from constants import DATE_FORMAT
 
 influx = Influx()
@@ -18,8 +18,8 @@ def main():
     deaths_current_week = influx.get_stat_group_by_week(Measurement.DEATHS, date)
     deaths_previous_week = influx.get_stat_group_by_week(Measurement.DEATHS, date - timedelta(7))
 
-    pcrs_report = get_human_report(pcrs_current_week, pcrs_previous_week)
-    deaths_report = get_human_report(deaths_current_week, deaths_previous_week)
+    pcrs_report = get_report_by_ccaa(pcrs_current_week, pcrs_previous_week)
+    deaths_report = get_report_by_ccaa(deaths_current_week, deaths_previous_week)
 
     twitter.publish_tweets(pcrs_report, get_header("PCR+", date))
     twitter.publish_tweets(deaths_report, get_header("Muertes", date))

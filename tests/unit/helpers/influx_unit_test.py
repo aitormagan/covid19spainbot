@@ -13,7 +13,7 @@ class InfluxUnitTest(unittest.TestCase):
 
         client = influx.client
 
-        self.assertEqual(client, influxdbclient_mock.return_value)
+        self.assertEqual(influxdbclient_mock.return_value, client)
         influxdbclient_mock.assert_called_once_with(os_mock.environ.get.return_value, 8086, None, None, "covid19")
         os_mock.environ.get.assert_called_once_with("INFLUX_HOST", "localhost")
 
@@ -98,8 +98,8 @@ class InfluxUnitTest(unittest.TestCase):
         result = influx.get_all_stats_group_by_day(date)
 
         get_stat_group_by_day_result = influx.get_stat_group_by_day.return_value
-        self.assertEqual(result, (get_stat_group_by_day_result, get_stat_group_by_day_result,
-                                  get_stat_group_by_day_result))
+        self.assertEqual((get_stat_group_by_day_result, get_stat_group_by_day_result,
+                          get_stat_group_by_day_result), result)
 
         influx.get_stat_group_by_day.assert_has_calls([call(Measurement.PCRS, date), call(Measurement.DEATHS, date),
                                                        call(Measurement.PCRS_LAST_24H, date)])
@@ -112,7 +112,7 @@ class InfluxUnitTest(unittest.TestCase):
         result = influx.get_all_stats_accumulated_until_day(date)
 
         get_stat_accumulated_until_day_result = influx.get_stat_accumulated_until_day.return_value
-        self.assertEqual(result, (get_stat_accumulated_until_day_result, get_stat_accumulated_until_day_result))
+        self.assertEqual((get_stat_accumulated_until_day_result, get_stat_accumulated_until_day_result), result)
 
         influx.get_stat_accumulated_until_day.assert_has_calls([call(Measurement.PCRS, date),
                                                                 call(Measurement.DEATHS, date)])

@@ -41,7 +41,7 @@ class SpainCovid19MinistryReportUnitTest(unittest.TestCase):
             get_pdf_for_id_mock.return_value), pages=str(page), area=area)
         get_pdf_for_id_mock.assert_called_once_with(date)
 
-        self.assertEqual(list(returned_data_frame['Col1']), valid_data["Col1*"])
+        self.assertEqual(valid_data["Col1*"], list(returned_data_frame['Col1']))
 
     def test_given_dataframe_when_get_column_data_then_map_returned(self):
 

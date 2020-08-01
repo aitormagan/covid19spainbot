@@ -5,7 +5,7 @@ from urllib.error import HTTPError
 from helpers.twitter import Twitter
 from helpers.influx import Influx, Measurement
 from helpers.ministry_report import SpainCovid19MinistryReport
-from helpers.reports import get_human_report, get_human_summary
+from helpers.reports import get_report_by_ccaa, get_human_summary
 from constants import DATE_FORMAT
 
 
@@ -77,8 +77,8 @@ def publish_report(today, yesterday):
     today_pcrs, today_deaths, _ = influx.get_all_stats_group_by_day(today)
     yesterday_pcrs, yesterday_deaths, _ = influx.get_all_stats_group_by_day(yesterday)
 
-    pcrs_report = get_human_report(today_pcrs, yesterday_pcrs)
-    deaths_report = get_human_report(today_deaths, yesterday_deaths)
+    pcrs_report = get_report_by_ccaa(today_pcrs, yesterday_pcrs)
+    deaths_report = get_report_by_ccaa(today_deaths, yesterday_deaths)
 
     twitter.publish_tweets(pcrs_report, get_header("PCR+", today))
     twitter.publish_tweets(deaths_report, get_header("Muertes", today))
