@@ -23,7 +23,7 @@ class Twitter:
         tweets = self._split_tweets(sentences, header)
         self._publish_tweets(tweets)
 
-    def _split_tweets(self, sentences, header):
+    def _split_tweets(self, sentences, header=None):
         tweets = []
 
         header_format = header + " ({0}/{1}):\n\n" if header else ""

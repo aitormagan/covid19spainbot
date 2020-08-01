@@ -8,7 +8,7 @@ class InfluxUnitTest(unittest.TestCase):
 
     @patch("helpers.influx.InfluxDBClient")
     @patch("helpers.influx.os")
-    def test_given_no_client_defined_when_access_client_then_client_build(self, os_mock, influxdbclient_mock):
+    def test_given_no_client_defined_when_access_client_then_client_is_built(self, os_mock, influxdbclient_mock):
         influx = Influx()
 
         client = influx.client
