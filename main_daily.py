@@ -15,7 +15,7 @@ influx = Influx()
 
 def main():
 
-    today = datetime.now() - timedelta(1)
+    today = datetime.now()
     yesterday = substract_days_ignoring_weekends(today, 1)
 
     data = influx.get_day_stat(Measurement.PCRS, today)
