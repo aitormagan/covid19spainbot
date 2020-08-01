@@ -44,18 +44,18 @@ class Influx:
         week_monday = week_day + timedelta(0 - week_day.weekday())
         week_sunday = week_day + timedelta(6 - week_day.weekday())
         query = f"SELECT sum(value) FROM {measurement.value} where " \
-                f"time >='{week_monday.strftime(self.DATE_FORMAT)}' and " \
-                f"time <='{week_sunday.strftime(self.DATE_FORMAT)}' group by ccaa;"
+                f"time >= '{week_monday.strftime(self.DATE_FORMAT)}' and " \
+                f"time <= '{week_sunday.strftime(self.DATE_FORMAT)}' group by ccaa;"
         return self._get_report(query)
 
     def get_stat_group_by_day(self, measurement: Measurement, day):
         query = f"SELECT sum(value) FROM {measurement.value} where " \
-                f"time ='{day.strftime(self.DATE_FORMAT)}' group by ccaa;"
+                f"time = '{day.strftime(self.DATE_FORMAT)}' group by ccaa;"
         return self._get_report(query)
 
     def get_stat_accumulated_until_day(self, measurement: Measurement, day):
         query = f"SELECT sum(value) FROM {measurement.value} where " \
-                f"time <='{day.strftime(self.DATE_FORMAT)}' group by ccaa;"
+                f"time <= '{day.strftime(self.DATE_FORMAT)}' group by ccaa;"
         return self._get_report(query)
 
     def _get_report(self, query):
