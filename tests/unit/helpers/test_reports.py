@@ -36,6 +36,11 @@ class ReportsUnitTest(unittest.TestCase):
         get_impact_mock.assert_called_once_with(10)
         get_tendency_emoji_mock.assert_called_once_with(10, 11)
 
+    def test_given_no_yesterday_when_get_tendency_icon_then_empty_returned(self):
+        emoji = get_tendency_emoji(20, None)
+
+        self.assertEqual("", emoji)
+
     def test_given_today_higher_than_yesterday_when_get_tendency_icon_then_upwards_triangle_returned(self):
         emoji = get_tendency_emoji(20, 15)
 
