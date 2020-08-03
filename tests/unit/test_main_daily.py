@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock, call, ANY
 from main_daily import subtract_days_ignoring_weekends, main, Measurement, HTTPError, get_today_numbers, get_header, \
     get_summary_tweet, publish_report, update_database
 
@@ -69,6 +69,35 @@ class MainDailyUnitTest(unittest.TestCase):
         datetime_mock.now.assert_called_once_with()
         subtract_days_ignoring_weekends_mock.assert_called_once_with(datetime_mock.now.return_value, 1)
         influx_mock.get_stat_group_by_day.assert_called_once_with(Measurement.PCRS, datetime_mock.now.return_value)
+
+    @patch("main_daily.twitter")
+    @patch("main_daily.subtract_days_ignoring_weekends")
+    @patch("main_daily.update_database")
+    @patch("main_daily.publish_report")
+    @patch("main_daily.datetime")
+    @patch("main_daily.influx")
+    def test_given_no_data_and_another_error_when_main_then_twitter_dm_sent(self, influx_mock, datetime_mock,
+                                                                            publish_report_mock, update_database_mock,
+                                                                            subtract_days_ignoring_weekends_mock,
+                                                                            twitter_mock):
+
+        exception_text = "exception text"
+        update_database_mock.side_effect = Exception(exception_text * 100)
+        influx_mock.get_stat_group_by_day.return_value = {}
+
+        main()
+
+        update_database_mock.assert_called_once_with(datetime_mock.now.return_value,
+                                                     subtract_days_ignoring_weekends_mock.return_value)
+        publish_report_mock.assert_not_called()
+        datetime_mock.now.assert_called_once_with()
+        subtract_days_ignoring_weekends_mock.assert_called_once_with(datetime_mock.now.return_value, 1)
+        influx_mock.get_stat_group_by_day.assert_called_once_with(Measurement.PCRS, datetime_mock.now.return_value)
+        twitter_mock.send_dm.assert_called_once_with(ANY)
+        dm_text = twitter_mock.send_dm.call_args[0][0]
+        self.assertEqual(280, len(dm_text))
+        self.assertTrue(dm_text.startswith(f"There was un unhandled exception. Trace:\n\n{exception_text}"))
+
 
     def test_given_no_weekends_when_subtract_days_ignoring_weekends_then_no_gaps(self):
         date = datetime(2020, 7, 29)

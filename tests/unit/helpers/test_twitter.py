@@ -105,13 +105,13 @@ class TwitterUnitTest(unittest.TestCase):
             twitter.client.update_status.assert_has_calls([call(tweet1, None),
                                                            call(tweet2, twitter.client.update_status.return_value.id)])
 
-    def test_when_send_dm_error_then_send_dm_error_called(self):
+    def test_when_send_dm_error_then_send_dm_called(self):
         with patch.object(Twitter, 'client'):
             twitter = Twitter()
             twitter.client = MagicMock()
+            dm = "example"
 
-            twitter.send_dm_error()
+            twitter.send_dm(dm)
 
             twitter.client.get_user.assert_called_once_with("aitormagan")
-            twitter.client.send_direct_message(twitter.client.get_user.return_value.id,
-                                               "There was an error, please, check!")
+            twitter.client.send_direct_message(twitter.client.get_user.return_value.id, dm)

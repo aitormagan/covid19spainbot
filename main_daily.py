@@ -27,9 +27,10 @@ def main():
 
         except HTTPError:
             logging.info("PDF is not availble yet...")
-        except Exception:
+        except Exception as e:
             logging.exception("Unhandled exception while trying to publish tweets")
-            twitter.send_dm_error()
+            dm_text = f"There was un unhandled exception. Trace:\n\n{str(e)}"[0:280]
+            twitter.send_dm(dm_text)
 
 
 def subtract_days_ignoring_weekends(initial_date, days_to_substract):

@@ -54,5 +54,5 @@ class Twitter:
         for tweet in tweets:
             last_tweet = self.client.update_status(tweet, last_tweet).id
 
-    def send_dm_error(self):
-        self.client.send_direct_message(self.client.get_user("aitormagan").id, "There was an error, please, check!")
+    def send_dm(self, dm):
+        self.client.send_direct_message(self.client.get_user("aitormagan").id, dm)
