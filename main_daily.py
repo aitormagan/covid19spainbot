@@ -29,7 +29,7 @@ def main():
             logging.info("PDF is not availble yet...")
         except Exception as e:
             logging.exception("Unhandled exception while trying to publish tweets")
-            dm_text = f"There was un unhandled exception. Trace:\n\n{str(e)}"[0:280]
+            dm_text = f"There was an unhandled exception. Trace:\n\n{str(e)}"[0:280]
             twitter.send_dm(dm_text)
 
 

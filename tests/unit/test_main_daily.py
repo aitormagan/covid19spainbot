@@ -96,7 +96,7 @@ class MainDailyUnitTest(unittest.TestCase):
         twitter_mock.send_dm.assert_called_once_with(ANY)
         dm_text = twitter_mock.send_dm.call_args[0][0]
         self.assertEqual(280, len(dm_text))
-        self.assertTrue(dm_text.startswith(f"There was un unhandled exception. Trace:\n\n{exception_text}"))
+        self.assertTrue(dm_text.startswith(f"There was an unhandled exception. Trace:\n\n{exception_text}"))
 
 
     def test_given_no_weekends_when_subtract_days_ignoring_weekends_then_no_gaps(self):
