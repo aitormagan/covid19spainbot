@@ -45,10 +45,17 @@ def subtract_days_ignoring_weekends(initial_date, days_to_substract):
 
 
 def update_database(today, yesterday):
-    pcrs_report = SpainCovid19MinistryReport(today, 1, (239, 56, 239 + 283, 56 + 756))
+    pcrs_report = SpainCovid19MinistryReport(today, 1)
     deaths_report = SpainCovid19MinistryReport(today, 2)
 
-    accumulated_pcrs_today = pcrs_report.get_column_data(1)
+    try:
+        accumulated_pcrs_today = pcrs_report.get_column_data(1)
+    except Exception:
+        # With some PDFs, tabula-pdf auto table detection fails.
+        # We need to specify a custom area.
+        pcrs_report = SpainCovid19MinistryReport(today, 1, (239, 56, 239 + 283, 56 + 756))
+        accumulated_pcrs_today = pcrs_report.get_column_data(1)
+
     accumulated_deaths_today = deaths_report.get_column_data(3)
 
     accumulated_pcrs_yesterday = influx.get_stat_accumulated_until_day(Measurement.PCRS, yesterday)
