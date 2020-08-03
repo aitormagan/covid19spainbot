@@ -85,6 +85,53 @@ class MainDailyUnitTest(unittest.TestCase):
     @patch("main_daily.SpainCovid19MinistryReport")
     @patch("main_daily.influx")
     @patch("main_daily.get_today_numbers")
+    def test_given_pdf_requires_area_when_update_database_then_info_calculated_and_inserted(self,
+                                                                                            get_today_numbers_mock,
+                                                                                            influx_mock,
+                                                                                            ministry_report_mock):
+
+        today = MagicMock()
+        yesterday = MagicMock()
+
+        pcrs_pdf = MagicMock()
+        accumulated_pcrs = MagicMock()
+        last_24h_pcrs = MagicMock()
+        pcrs_pdf.get_column_data.side_effect = [Exception(), accumulated_pcrs, last_24h_pcrs]
+        deaths_pdf = MagicMock()
+        ministry_report_mock.side_effect = [pcrs_pdf, deaths_pdf, pcrs_pdf]
+
+        yesterday_pcrs_accumulated = MagicMock()
+        yesterday_deaths_accumulated = MagicMock()
+        influx_mock.get_stat_accumulated_until_day.side_effect = [yesterday_pcrs_accumulated,
+                                                                  yesterday_deaths_accumulated]
+
+        today_pcrs = MagicMock()
+        today_deaths = MagicMock()
+        get_today_numbers_mock.side_effect = [today_pcrs, today_deaths]
+
+        update_database(today, yesterday)
+
+        ministry_report_mock.assert_has_calls([call(today, 1), call(today, 2),
+                                               call(today, 1,  (239, 56, 239 + 283, 56 + 756))])
+        pcrs_pdf.get_column_data.assert_has_calls([call(1), call(1), call(2)])
+        deaths_pdf.get_column_data.assert_called_once_with(3)
+
+        influx_mock.get_stat_accumulated_until_day.assert_has_calls([call(Measurement.PCRS, yesterday),
+                                                                     call(Measurement.DEATHS, yesterday)])
+
+        get_today_numbers_mock.assert_has_calls([call(accumulated_pcrs,
+                                                      yesterday_pcrs_accumulated),
+                                                 call(deaths_pdf.get_column_data.return_value,
+                                                      yesterday_deaths_accumulated)])
+
+        influx_mock.insert_stats_in_influx.assert_has_calls([call(Measurement.PCRS, today, today_pcrs),
+                                                             call(Measurement.DEATHS, today, today_deaths),
+                                                             call(Measurement.PCRS_LAST_24H, today,
+                                                                  last_24h_pcrs)])
+
+    @patch("main_daily.SpainCovid19MinistryReport")
+    @patch("main_daily.influx")
+    @patch("main_daily.get_today_numbers")
     def test_when_update_database_then_info_calculated_and_inserted(self, get_today_numbers_mock,
                                                                     influx_mock, ministry_report_mock):
 
