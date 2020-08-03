@@ -109,7 +109,7 @@ class MainDailyUnitTest(unittest.TestCase):
 
         update_database(today, yesterday)
 
-        ministry_report_mock.assert_has_calls([call(today, 1, (239, 56, 239 + 293, 56 + 756)), call(today, 2)])
+        ministry_report_mock.assert_has_calls([call(today, 1, (239, 56, 239 + 283, 56 + 756)), call(today, 2)])
         pcrs_pdf.get_column_data.assert_has_calls([call(1), call(2)])
         deaths_pdf.get_column_data.assert_called_once_with(3)
 

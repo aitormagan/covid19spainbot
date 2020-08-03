@@ -45,7 +45,7 @@ def subtract_days_ignoring_weekends(initial_date, days_to_substract):
 
 
 def update_database(today, yesterday):
-    pcrs_report = SpainCovid19MinistryReport(today, 1, (239, 56, 239 + 293, 56 + 756))
+    pcrs_report = SpainCovid19MinistryReport(today, 1, (239, 56, 239 + 283, 56 + 756))
     deaths_report = SpainCovid19MinistryReport(today, 2)
 
     accumulated_pcrs_today = pcrs_report.get_column_data(1)
