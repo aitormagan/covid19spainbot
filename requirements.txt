@@ -1,3 +1,4 @@
 tweepy
 tabula-py
 influxdb
+requests
