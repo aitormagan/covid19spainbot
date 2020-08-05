@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime
 from unittest.mock import patch, MagicMock, call, ANY
 from main_daily import subtract_days_ignoring_weekends, main, Measurement, HTTPError, get_today_numbers, get_header, \
-    get_summary_tweet, publish_report, update_database
+    get_summary_tweet, publish_report, update_database, GRAPH_IMAGE_URL
 
 
 class MainDailyUnitTest(unittest.TestCase):
@@ -257,8 +257,9 @@ class MainDailyUnitTest(unittest.TestCase):
                                                        get_human_summary_mock.return_value)
 
         publish_tweet_call = call(get_report_by_ccaa_mock.return_value, get_header_mock.return_value)
-        twitter_mock.publish_tweets.assert_has_calls([publish_tweet_call, publish_tweet_call,
-                                                      call([get_summary_tweet_mock.return_value])])
+        twitter_mock.publish_tweets.assert_has_calls([publish_tweet_call, publish_tweet_call])
+        twitter_mock.publish_tweet_with_media.assert_called_once_with(get_summary_tweet_mock.return_value,
+                                                                      GRAPH_IMAGE_URL)
 
     def test_given_monday_when_get_header_then_weekend_text_included(self):
         date = datetime(2020, 7, 27)

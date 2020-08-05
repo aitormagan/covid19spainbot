@@ -4,7 +4,7 @@ from datetime import timedelta, datetime
 from helpers.influx import Influx, Measurement
 from helpers.twitter import Twitter
 from helpers.reports import get_report_by_ccaa, get_human_summary
-from constants import DATE_FORMAT
+from constants import DATE_FORMAT, GRAPH_IMAGE_URL
 
 influx = Influx()
 twitter = Twitter()
@@ -28,7 +28,7 @@ def main():
     pcrs_summary = get_human_summary("PCR+", pcrs_current_week, pcrs_previous_week, today_pcrs_accumulated)
     deaths_summary = get_human_summary("Muertes", deaths_current_week, deaths_previous_week, today_deaths_accumulated)
 
-    twitter.publish_tweets([get_week_summary_tweet(date, pcrs_summary, deaths_summary)])
+    twitter.publish_tweet_with_media(get_week_summary_tweet(date, pcrs_summary, deaths_summary), GRAPH_IMAGE_URL)
 
 
 def get_header(stat_type, date):

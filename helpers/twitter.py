@@ -1,6 +1,8 @@
 import os
 import re
+from tempfile import NamedTemporaryFile
 import tweepy
+import requests
 
 
 class Twitter:
@@ -56,3 +58,15 @@ class Twitter:
 
     def send_dm(self, dm):
         self.client.send_direct_message(self.client.get_user("aitormagan").id, dm)
+
+    def publish_tweet_with_media(self, tweet, media):
+        with NamedTemporaryFile(suffix=".png") as temp:
+            get_request = requests.get(media)
+
+            if get_request.status_code == 200:
+                for chunk in get_request:
+                    temp.write(chunk)
+
+                temp.flush()
+
+            self.client.update_with_media(temp.name, tweet)

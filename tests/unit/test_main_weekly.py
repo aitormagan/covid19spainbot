@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock, call
 from datetime import datetime, timedelta
-from main_weekly import get_header, get_week_summary_tweet, main, Measurement
+from main_weekly import get_header, get_week_summary_tweet, main, Measurement, GRAPH_IMAGE_URL
 
 
 class MainWeeklyUnitTest(unittest.TestCase):
@@ -54,8 +54,9 @@ class MainWeeklyUnitTest(unittest.TestCase):
                                                             get_human_summary_mock.return_value)
 
         publish_tweet_call = call(get_report_by_ccaa_mock.return_value, get_header_mock.return_value)
-        twitter_mock.publish_tweets.assert_has_calls([publish_tweet_call, publish_tweet_call,
-                                                      call([get_week_summary_tweet_mock.return_value])])
+        twitter_mock.publish_tweets.assert_has_calls([publish_tweet_call, publish_tweet_call])
+        twitter_mock.publish_tweet_with_media.assert_called_once_with(get_week_summary_tweet_mock.return_value,
+                                                                      GRAPH_IMAGE_URL)
 
     def test_when_get_header_then_monday_and_sunday_included(self):
         date = datetime(2020, 7, 27)
