@@ -115,3 +115,45 @@ class TwitterUnitTest(unittest.TestCase):
 
             twitter.client.get_user.assert_called_once_with("aitormagan")
             twitter.client.send_direct_message(twitter.client.get_user.return_value.id, dm)
+
+    @patch("helpers.twitter.NamedTemporaryFile")
+    def test_given_url_and_text_when_publish_with_media_then_file_downloaded_and_tweet_published(self, temp_file_mock):
+        with patch.object(Twitter, 'client'):
+            twitter = Twitter()
+            twitter.client = MagicMock()
+            twitter._download_file = MagicMock()
+            url = "http://example.com/file.jpg"
+            text = "this is an example"
+
+            twitter.publish_tweet_with_media(text, url)
+
+            temp_file_mock.assert_called_once_with(suffix=".png")
+
+            with temp_file_mock.return_value as temp_file:
+                twitter._download_file.assert_called_once_with(url, temp_file)
+                twitter.client.update_with_media.assert_called_once_with(temp_file.name, text)
+
+    @patch("helpers.twitter.requests")
+    def test_given_file_cannot_be_downloaded_when_download_file_then_exception_risen(self, requests_mock):
+        requests_mock.get.return_value.status_code = 500
+        url = MagicMock()
+
+        with self.assertRaises(Exception):
+            Twitter._download_file(url, MagicMock())
+
+        requests_mock.get.assert_called_once_with(url)
+
+    @patch("helpers.twitter.requests")
+    def test_given_file_cannot_be_downloaded_when_download_file_then_exception_risen(self, requests_mock):
+        chunk1 = MagicMock()
+        chunk2 = MagicMock()
+        requests_mock.get.return_value.status_code = 200
+        requests_mock.get.return_value.__iter__ = lambda x: iter([chunk1, chunk2])
+        url = MagicMock()
+        file = MagicMock()
+
+        Twitter._download_file(url, file)
+
+        requests_mock.get.assert_called_once_with(url)
+        file.write.assert_has_calls([call(chunk1), call(chunk2)])
+        file.flush.assert_called_once_with()

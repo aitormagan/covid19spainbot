@@ -59,14 +59,19 @@ class Twitter:
     def send_dm(self, dm):
         self.client.send_direct_message(self.client.get_user("aitormagan").id, dm)
 
-    def publish_tweet_with_media(self, tweet, media):
-        with NamedTemporaryFile(suffix=".png") as temp:
-            get_request = requests.get(media)
+    def publish_tweet_with_media(self, tweet, media_url):
+        with NamedTemporaryFile(suffix=".png") as temp_file:
+            self._download_file(media_url, temp_file)
+            self.client.update_with_media(temp_file.name, tweet)
 
-            if get_request.status_code == 200:
-                for chunk in get_request:
-                    temp.write(chunk)
+    @staticmethod
+    def _download_file(media_url, file):
+        get_request = requests.get(media_url)
 
-                temp.flush()
+        if get_request.status_code == 200:
+            for chunk in get_request:
+                file.write(chunk)
 
-            self.client.update_with_media(temp.name, tweet)
+            file.flush()
+        else:
+            raise Exception("File could not be downloaded")
