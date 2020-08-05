@@ -144,7 +144,7 @@ class TwitterUnitTest(unittest.TestCase):
         requests_mock.get.assert_called_once_with(url)
 
     @patch("helpers.twitter.requests")
-    def test_given_file_cannot_be_downloaded_when_download_file_then_exception_risen(self, requests_mock):
+    def test_given_file_can_be_downloaded_when_download_file_then_file_is_written(self, requests_mock):
         chunk1 = MagicMock()
         chunk2 = MagicMock()
         requests_mock.get.return_value.status_code = 200
