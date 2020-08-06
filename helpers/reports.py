@@ -1,4 +1,5 @@
 from helpers.spain_geography import get_impact_string
+from constants import GRAPH_IMAGE_URL
 
 
 def get_report_by_ccaa(today_data, yesterday_data):
@@ -31,3 +32,10 @@ def get_tendency_emoji(today_number, yesterday_number):
         return '🔻{0}'.format(yesterday_number - today_number)
     else:
         return '🔙'
+
+
+def get_graph_url(start=None, end=None):
+    start_str = f"&from={int(start.strftime('%s')) * 1000}" if start else ""
+    end_str = f"&to={int(end.strftime('%s')) * 1000}" if end else ""
+
+    return GRAPH_IMAGE_URL + start_str + end_str

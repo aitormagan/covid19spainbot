@@ -1,6 +1,8 @@
+from datetime import datetime
 import unittest
 from unittest.mock import patch, call
-from helpers.reports import get_tendency_emoji, get_human_summary, get_report_by_ccaa
+from helpers.reports import get_tendency_emoji, get_human_summary, get_report_by_ccaa, get_graph_url
+from constants import GRAPH_IMAGE_URL
 
 
 class ReportsUnitTest(unittest.TestCase):
@@ -55,3 +57,20 @@ class ReportsUnitTest(unittest.TestCase):
         emoji = get_tendency_emoji(20, 20)
 
         self.assertEqual("🔙", emoji)
+
+    def test_given_no_dates_when_get_graph_url_then_base_url_returned(self):
+        self.assertEqual(GRAPH_IMAGE_URL, get_grahp_url())
+
+    def test_given_start_when_get_graph_url_then_from_included_url_returned(self):
+        date = datetime(2020, 8, 6)
+        self.assertEqual(GRAPH_IMAGE_URL + "&from=" + str(int(date.strftime("%s")) * 1000), get_graph_url(date))
+
+    def test_given_end_when_get_graph_url_then_to_included_url_returned(self):
+        date = datetime(2020, 8, 6)
+        self.assertEqual(GRAPH_IMAGE_URL + "&to=" + str(int(date.strftime("%s")) * 1000), get_graph_url(end=date))
+
+    def test_given_start_and_end_when_get_graph_url_then_from_and_to_included_url_returned(self):
+        date1 = datetime(2020, 8, 6)
+        date2 = datetime(2020, 8, 12)
+        self.assertEqual(GRAPH_IMAGE_URL + "&from=" + str(int(date1.strftime("%s")) * 1000) +
+                         "&to=" + str(int(date2.strftime("%s")) * 1000), get_graph_url(date1, date2))

@@ -1,8 +1,8 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock, call, ANY
 from main_daily import subtract_days_ignoring_weekends, main, Measurement, HTTPError, get_today_numbers, get_header, \
-    get_summary_tweet, publish_report, update_database, GRAPH_IMAGE_URL
+    get_summary_tweet, publish_report, update_database
 
 
 class MainDailyUnitTest(unittest.TestCase):
@@ -214,6 +214,7 @@ class MainDailyUnitTest(unittest.TestCase):
 
         self.assertEqual({"Madrid": 100, "Cataluña": 90}, get_today_numbers(today, yesterday))
 
+    @patch("main_daily.get_graph_url")
     @patch("main_daily.influx")
     @patch("main_daily.get_report_by_ccaa")
     @patch("main_daily.twitter")
@@ -222,9 +223,10 @@ class MainDailyUnitTest(unittest.TestCase):
     @patch("main_daily.get_header")
     def test_when_publish_report_then_info_calculated_and_published(self, get_header_mock, get_summary_tweet_mock,
                                                                     get_human_summary_mock, twitter_mock,
-                                                                    get_report_by_ccaa_mock, influx_mock):
-        today = MagicMock()
-        yesterday = MagicMock()
+                                                                    get_report_by_ccaa_mock, influx_mock,
+                                                                    get_graph_url_mock):
+        today = datetime(2020, 8, 6)
+        yesterday = datetime(2020, 8, 5)
 
         today_pcrs_report = MagicMock()
         today_deaths_report = MagicMock()
@@ -259,7 +261,8 @@ class MainDailyUnitTest(unittest.TestCase):
         publish_tweet_call = call(get_report_by_ccaa_mock.return_value, get_header_mock.return_value)
         twitter_mock.publish_tweets.assert_has_calls([publish_tweet_call, publish_tweet_call])
         twitter_mock.publish_tweet_with_media.assert_called_once_with(get_summary_tweet_mock.return_value,
-                                                                      GRAPH_IMAGE_URL)
+                                                                      get_graph_url_mock.return_value)
+        get_graph_url_mock.assert_called_once_with(today - timedelta(31), today)
 
     def test_given_monday_when_get_header_then_weekend_text_included(self):
         date = datetime(2020, 7, 27)

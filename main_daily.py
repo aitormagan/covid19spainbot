@@ -5,9 +5,8 @@ from urllib.error import HTTPError
 from helpers.twitter import Twitter
 from helpers.influx import Influx, Measurement
 from helpers.ministry_report import SpainCovid19MinistryReport
-from helpers.reports import get_report_by_ccaa, get_human_summary
-from constants import DATE_FORMAT, GRAPH_IMAGE_URL
-
+from helpers.reports import get_report_by_ccaa, get_human_summary, get_graph_url
+from constants import DATE_FORMAT
 
 twitter = Twitter()
 influx = Influx()
@@ -94,7 +93,8 @@ def publish_report(today, yesterday):
     today_pcrs_accumulated, today_deaths_accumulated = influx.get_all_stats_accumulated_until_day(today)
     pcrs_summary = get_human_summary("PCR+", today_pcrs, yesterday_pcrs, today_pcrs_accumulated)
     deaths_summary = get_human_summary("Muertes", today_deaths, yesterday_deaths, today_deaths_accumulated)
-    twitter.publish_tweet_with_media(get_summary_tweet(today, pcrs_summary, deaths_summary), GRAPH_IMAGE_URL)
+    graph_url = get_graph_url(today - timedelta(31), today)
+    twitter.publish_tweet_with_media(get_summary_tweet(today, pcrs_summary, deaths_summary), graph_url)
 
     logging.info("Tweets published correctly!")
 
