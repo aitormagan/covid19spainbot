@@ -229,15 +229,18 @@ class MainDailyUnitTest(unittest.TestCase):
         yesterday = datetime(2020, 8, 5)
 
         today_pcrs_report = MagicMock()
+        today_pcrs24h_report = MagicMock()
         today_deaths_report = MagicMock()
         yesterday_pcrs_report = MagicMock()
+        yesterday_pcrs24h_report = MagicMock()
         yesterday_deaths_report = MagicMock()
         today_pcrs_accumulated_report = MagicMock()
         today_deaths_accumulated_report = MagicMock()
 
-        influx_mock.get_all_stats_group_by_day.side_effect = [(today_pcrs_report, today_deaths_report, MagicMock()),
+        influx_mock.get_all_stats_group_by_day.side_effect = [(today_pcrs_report, today_deaths_report,
+                                                               today_pcrs24h_report),
                                                               (yesterday_pcrs_report, yesterday_deaths_report,
-                                                               MagicMock())]
+                                                               yesterday_pcrs24h_report)]
 
         influx_mock.get_all_stats_accumulated_until_day.return_value = (today_pcrs_accumulated_report,
                                                                         today_deaths_accumulated_report)
@@ -252,10 +255,12 @@ class MainDailyUnitTest(unittest.TestCase):
         influx_mock.get_all_stats_accumulated_until_day.assert_called_once_with(today)
         get_human_summary_mock.assert_has_calls([call("PCR+", today_pcrs_report, yesterday_pcrs_report,
                                                       today_pcrs_accumulated_report),
+                                                 call("PCR+ 24h", today_pcrs24h_report, yesterday_pcrs24h_report),
                                                  call("Muertes", today_deaths_report, yesterday_deaths_report,
                                                       today_deaths_accumulated_report)])
 
         get_summary_tweet_mock.assert_called_once_with(today, get_human_summary_mock.return_value,
+                                                       get_human_summary_mock.return_value,
                                                        get_human_summary_mock.return_value)
 
         publish_tweet_call = call(get_report_by_ccaa_mock.return_value, get_header_mock.return_value)
@@ -283,9 +288,10 @@ class MainDailyUnitTest(unittest.TestCase):
     def test_when_get_summary_tweet_then_date_is_correct(self):
         date = datetime(2020, 7, 27)
         pcrs_summary = "pcrs_summary"
+        pcrs24_summary = "pcrs24h_summary"
         deaths_summary = "deaths_summary"
 
-        summary = get_summary_tweet(date, pcrs_summary, deaths_summary)
+        summary = get_summary_tweet(date, pcrs_summary, pcrs24_summary, deaths_summary)
 
-        self.assertTrue(summary.startswith("Resumen España al finalizar el 26/07/2020:\n\n{0}\n{1}".format(
-            pcrs_summary, deaths_summary)))
+        self.assertTrue(summary.startswith("Resumen España al finalizar el 26/07/2020:\n\n{0}\n{1}\n{2}".format(
+            pcrs_summary, pcrs24_summary, deaths_summary)))

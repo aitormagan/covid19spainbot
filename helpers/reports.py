@@ -14,12 +14,13 @@ def get_report_by_ccaa(today_data, yesterday_data):
     return sentences
 
 
-def get_human_summary(stat_type, today_data, yesterday_data, today_accumulated_data):
+def get_human_summary(stat_type, today_data, yesterday_data, today_accumulated_data=None):
     today_total = sum(today_data.values())
     yesteday_total = sum(yesterday_data.values())
-    sentence = "{0}: {1:+} {2} {3} (Totales: {4:,})".format(stat_type, today_total, get_impact_string(today_total),
-                                                            get_tendency_emoji(today_total, yesteday_total),
-                                                            sum(today_accumulated_data.values())).replace(",", ".")
+    total_sentence = "(Totales: {0:,})".format(sum(today_accumulated_data.values())) if today_accumulated_data else ""
+    sentence = "{0}: {1:+} {2} {3} {4}".format(stat_type, today_total, get_impact_string(today_total),
+                                               get_tendency_emoji(today_total, yesteday_total),
+                                               total_sentence).replace(",", ".").strip()
     return " ".join(sentence.split())
 
 

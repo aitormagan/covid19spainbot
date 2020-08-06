@@ -81,8 +81,8 @@ def get_today_numbers(today_accumulated, yesterday_accumulated):
 
 
 def publish_report(today, yesterday):
-    today_pcrs, today_deaths, _ = influx.get_all_stats_group_by_day(today)
-    yesterday_pcrs, yesterday_deaths, _ = influx.get_all_stats_group_by_day(yesterday)
+    today_pcrs, today_deaths, today_pcrs24h = influx.get_all_stats_group_by_day(today)
+    yesterday_pcrs, yesterday_deaths, yesterday_pcrs24h = influx.get_all_stats_group_by_day(yesterday)
 
     pcrs_report = get_report_by_ccaa(today_pcrs, yesterday_pcrs)
     deaths_report = get_report_by_ccaa(today_deaths, yesterday_deaths)
@@ -92,9 +92,10 @@ def publish_report(today, yesterday):
 
     today_pcrs_accumulated, today_deaths_accumulated = influx.get_all_stats_accumulated_until_day(today)
     pcrs_summary = get_human_summary("PCR+", today_pcrs, yesterday_pcrs, today_pcrs_accumulated)
+    pcrs24h_summary = get_human_summary("PCR+ 24h", today_pcrs24h, yesterday_pcrs24h)
     deaths_summary = get_human_summary("Muertes", today_deaths, yesterday_deaths, today_deaths_accumulated)
     graph_url = get_graph_url(today - timedelta(31), today)
-    twitter.publish_tweet_with_media(get_summary_tweet(today, pcrs_summary, deaths_summary), graph_url)
+    twitter.publish_tweet_with_media(get_summary_tweet(today, pcrs_summary, pcrs24h_summary, deaths_summary), graph_url)
 
     logging.info("Tweets published correctly!")
 
@@ -104,9 +105,10 @@ def get_header(stat_type, date):
                                             (date - timedelta(1)).strftime(DATE_FORMAT))
 
 
-def get_summary_tweet(date, pcrs_summary, deaths_summary):
+def get_summary_tweet(date, pcrs_summary, pcrs24h_summary, deaths_summary):
     items = ["Resumen España al finalizar el {0}:".format((date - timedelta(1)).strftime(DATE_FORMAT)), "",
-             pcrs_summary, deaths_summary, "", "Evolución ➡️ https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1",
+             pcrs_summary, pcrs24h_summary, deaths_summary, "",
+             "Evolución ➡️ https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1",
              "Comparación ➡️ https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1"]
 
     return "\n".join(list(filter(lambda x: x is not None, items)))

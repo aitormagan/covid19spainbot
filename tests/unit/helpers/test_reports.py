@@ -25,7 +25,8 @@ class ReportsUnitTest(unittest.TestCase):
 
     @patch("helpers.reports.get_tendency_emoji", return_value="^ 1")
     @patch("helpers.reports.get_impact_string", return_value="(0.21/millón)")
-    def test_given_data_when_get_human_summary_then_report_returned(self, get_impact_mock, get_tendency_emoji_mock):
+    def test_given_accumulated_when_get_human_summary_then_report_includes_accumulated(self, get_impact_mock,
+                                                                                       get_tendency_emoji_mock):
         today_data = {"Madrid": 7, "Cataluña": 3}
         yesterday_data = {"Madrid": 2, "Cataluña": 9}
         today_accumulated = {"Madrid": 9000, "Cataluña": 11123}
@@ -34,6 +35,21 @@ class ReportsUnitTest(unittest.TestCase):
 
         self.assertEqual("PCR+: +10 {0} {1} (Totales: 20.123)".format(get_impact_mock.return_value,
                                                                       get_tendency_emoji_mock.return_value), result)
+
+        get_impact_mock.assert_called_once_with(10)
+        get_tendency_emoji_mock.assert_called_once_with(10, 11)
+
+    @patch("helpers.reports.get_tendency_emoji", return_value="^ 1")
+    @patch("helpers.reports.get_impact_string", return_value="(0.21/millón)")
+    def test_given_no_accumulated_when_get_human_summary_then_report_no_include_accumulated(self, get_impact_mock,
+                                                                                            get_tendency_emoji_mock):
+        today_data = {"Madrid": 7, "Cataluña": 3}
+        yesterday_data = {"Madrid": 2, "Cataluña": 9}
+
+        result = get_human_summary("PCR+", today_data, yesterday_data)
+
+        self.assertEqual("PCR+: +10 {0} {1}".format(get_impact_mock.return_value,
+                                                    get_tendency_emoji_mock.return_value), result)
 
         get_impact_mock.assert_called_once_with(10)
         get_tendency_emoji_mock.assert_called_once_with(10, 11)
@@ -59,7 +75,7 @@ class ReportsUnitTest(unittest.TestCase):
         self.assertEqual("🔙", emoji)
 
     def test_given_no_dates_when_get_graph_url_then_base_url_returned(self):
-        self.assertEqual(GRAPH_IMAGE_URL, get_grahp_url())
+        self.assertEqual(GRAPH_IMAGE_URL, get_graph_url())
 
     def test_given_start_when_get_graph_url_then_from_included_url_returned(self):
         date = datetime(2020, 8, 6)
