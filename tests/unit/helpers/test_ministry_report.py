@@ -30,7 +30,7 @@ class SpainCovid19MinistryReportUnitTest(unittest.TestCase):
         page = "1"
         area = MagicMock()
         report = SpainCovid19MinistryReport(date, page, area)
-        valid_data = {"Col1*": ["header1", "header2*", "header3", "header4*"] + list(CCAA_POPULATION.keys())}
+        valid_data = {"Col1*": ["value1", "value2*", "value3", "value4*"] + list(CCAA_POPULATION.keys())}
         d1 = DataFrame(data={"Col1": [1, 2, 3]})
         d2 = DataFrame(data=valid_data)
         tabula_mock.read_pdf.return_value = [d1, d2]

@@ -29,7 +29,7 @@ class SpainCovid19MinistryReport:
     @staticmethod
     def get_pdf_id_for_date(date):
         # 14/5/2020 -> id: 105
-        # Weekends starting on 4/7/2020 no reports are published
+        # Starting on 4/7/2020, Spanish Public Health Ministry does not publish reports at weekends.
         reference_date = datetime(2020, 5, 14)
         initial_weekend_without_report = datetime(2020, 7, 4)
         weekends = math.ceil((date - initial_weekend_without_report).days / 7) \
