@@ -28,7 +28,7 @@ def main():
     pcrs_summary = get_human_summary("PCR+", pcrs_current_week, pcrs_previous_week, today_pcrs_accumulated)
     deaths_summary = get_human_summary("Muertes", deaths_current_week, deaths_previous_week, today_deaths_accumulated)
 
-    graph_url = get_graph_url(date - timedelta(7), date)
+    graph_url = get_graph_url(date - timedelta(7), date - timedelta(2))
     twitter.publish_tweet_with_media(get_week_summary_tweet(date, pcrs_summary, deaths_summary), graph_url)
 
 
