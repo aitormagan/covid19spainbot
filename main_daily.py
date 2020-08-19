@@ -5,7 +5,7 @@ from urllib.error import HTTPError
 from helpers.twitter import Twitter
 from helpers.influx import Influx, Measurement
 from helpers.ministry_report import SpainCovid19MinistryReport
-from helpers.reports import get_report_by_ccaa, get_human_summary, get_graph_url
+from helpers.reports import get_report_by_ccaa, get_graph_url, get_ccaa_report
 from constants import DATE_FORMAT
 
 twitter = Twitter()
@@ -19,9 +19,9 @@ def main():
 
     data = influx.get_stat_group_by_day(Measurement.PCRS, today)
 
-    if not data:
+    if data:
         try:
-            update_database(today)
+            # update_database(today)
             publish_report(today, yesterday)
 
         except HTTPError:
@@ -88,21 +88,57 @@ def get_today_numbers(today_accumulated, yesterday_accumulated):
 
 
 def publish_report(today, yesterday):
-    today_pcrs, today_deaths, today_pcrs24h = influx.get_all_stats_group_by_day(today)
-    yesterday_pcrs, yesterday_deaths, yesterday_pcrs24h = influx.get_all_stats_group_by_day(yesterday)
+    today_pcrs, today_deaths, today_pcrs24h, today_admitted, today_icu = influx.get_all_stats_group_by_day(today)
+    yesterday_pcrs, yesterday_deaths, yesterday_pcrs24h, yesterday_admitted, yesterday_icu = influx.get_all_stats_group_by_day(yesterday)
 
-    pcrs_report = get_report_by_ccaa(today_pcrs, yesterday_pcrs)
-    deaths_report = get_report_by_ccaa(today_deaths, yesterday_deaths)
+    accumulated_pcrs, accumulated_deaths = influx.get_all_stats_accumulated_until_day(today)
 
-    twitter.publish_tweets(pcrs_report, get_header("PCR+", today))
-    twitter.publish_tweets(deaths_report, get_header("Muertes", today))
+    today_data = {}
+    yesterday_data = {}
 
-    today_pcrs_accumulated, today_deaths_accumulated = influx.get_all_stats_accumulated_until_day(today)
-    pcrs_summary = get_human_summary("PCR+", today_pcrs, yesterday_pcrs, today_pcrs_accumulated)
-    pcrs24h_summary = get_human_summary("PCR+ 24h", today_pcrs24h, yesterday_pcrs24h)
-    deaths_summary = get_human_summary("Muertes", today_deaths, yesterday_deaths, today_deaths_accumulated)
+    for ccaa in today_pcrs:
+        today_data[ccaa] = {}
+        yesterday_data[ccaa] = {}
+
+        today_data[ccaa]["pcrs"] = today_pcrs[ccaa]
+        today_data[ccaa]["pcrs_last24h"] = today_pcrs24h[ccaa]
+        today_data[ccaa]["deaths"] = today_deaths[ccaa]
+        today_data[ccaa]["admitted"] = today_admitted[ccaa]
+        today_data[ccaa]["icu"] = today_icu[ccaa]
+        today_data[ccaa]["accumulated_pcrs"] = accumulated_pcrs[ccaa]
+        today_data[ccaa]["accumulated_deaths"] = accumulated_deaths[ccaa]
+
+        yesterday_data[ccaa]["pcrs"] = yesterday_pcrs[ccaa]
+        yesterday_data[ccaa]["pcrs_last24h"] = yesterday_pcrs24h[ccaa]
+        yesterday_data[ccaa]["deaths"] = yesterday_deaths[ccaa]
+        yesterday_data[ccaa]["admitted"] = yesterday_admitted[ccaa]
+        yesterday_data[ccaa]["icu"] = yesterday_icu[ccaa]
+
+    tweets = get_report_by_ccaa(today, today_data, yesterday_data)
+
+    last_id = twitter.publish_tweets(tweets)
+
+    spain_today_data = {
+        "pcrs": sum(today_pcrs.values()),
+        "pcrs_last24h": sum(today_pcrs24h.values()),
+        "deaths": sum(today_deaths.values()),
+        "admitted": sum(today_admitted.values()),
+        "icu": sum(today_icu.values()),
+        "accumulated_pcrs": sum(accumulated_pcrs.values()),
+        "accumulated_deaths": sum(accumulated_deaths.values())
+    }
+
+    spain_yesterday_data = {
+        "pcrs": sum(yesterday_pcrs.values()),
+        "pcrs_last24h": sum(yesterday_pcrs24h.values()),
+        "deaths": sum(yesterday_deaths.values()),
+        "admitted": sum(yesterday_admitted.values()),
+        "icu": sum(yesterday_icu.values())
+    }
+
+    spain_report = get_ccaa_report("España", today, spain_today_data, spain_yesterday_data)
     graph_url = get_graph_url(today - timedelta(31), today)
-    twitter.publish_tweet_with_media(get_summary_tweet(today, pcrs_summary, pcrs24h_summary, deaths_summary), graph_url)
+    twitter.publish_tweet_with_media(spain_report, graph_url, last_id)
 
     logging.info("Tweets published correctly!")
 

@@ -1,17 +1,45 @@
 from helpers.spain_geography import get_impact_string
-from constants import GRAPH_IMAGE_URL
+from constants import GRAPH_IMAGE_URL, DATE_FORMAT
 
 
-def get_report_by_ccaa(today_data, yesterday_data):
-    sentences = []
+def get_report_by_ccaa(date, today_data, yesterday_data):
+    tweets = []
     for ccaa in today_data:
-        ccaa_today_total = today_data[ccaa]
-        ccaa_yesterday_total = yesterday_data[ccaa]
-        sentence = "{0}: {1:+} {2} {3}".format(ccaa, ccaa_today_total, get_impact_string(ccaa_today_total, ccaa),
-                                               get_tendency_emoji(ccaa_today_total, ccaa_yesterday_total))
-        sentences.append(' '.join(sentence.split()))
+        tweets.append(get_ccaa_report(ccaa, date, today_data[ccaa], yesterday_data[ccaa]))
 
-    return sentences
+    return tweets
+
+
+def get_ccaa_report(ccaa, date, ccaa_today_data, ccaa_yesterday_data):
+    sentences = [f"{ccaa} {date.strftime(DATE_FORMAT)}:", "\n"]
+
+    sentences.append(generate_ccaa_sentence("💉 PCRs", ccaa, ccaa_today_data.get("pcrs"),
+                                            ccaa_yesterday_data.get("pcrs"),
+                                            ccaa_today_data.get("accumulated_pcrs")))
+
+    sentences.append(generate_ccaa_sentence("💉 PCRs 24h", ccaa, ccaa_today_data.get("pcrs_last24h"),
+                                            ccaa_yesterday_data.get("pcrs_last24h")))
+    sentences.append(generate_ccaa_sentence("😢 Muertes", ccaa, ccaa_today_data.get("deaths"),
+                                            ccaa_yesterday_data.get("deaths"),
+                                            ccaa_today_data.get("accumulated_deaths")))
+
+    sentences.append("\n")
+
+    sentences.append(generate_ccaa_sentence("🚑 Hospitalizados", ccaa, ccaa_today_data.get("admitted"),
+                                            ccaa_yesterday_data.get("admitted")))
+    sentences.append(generate_ccaa_sentence("🏥 UCI", ccaa, ccaa_today_data.get("icu"),
+                                            ccaa_yesterday_data.get("icu")))
+
+    return "\n".join(sentences)
+
+
+def generate_ccaa_sentence(stat, ccaa, today_total, yesterday_total, acumulated=None):
+    total_sentence = "(Totales: {0:,})".format(acumulated) if acumulated else ""
+    sentence = "{0}: {1:+} {2} {3} {4}".format(stat, today_total, get_impact_string(today_total, ccaa),
+                                               get_tendency_emoji(today_total, yesterday_total),
+                                               total_sentence).replace(",", ".").strip()
+
+    return " ".join(sentence.split())
 
 
 def get_human_summary(stat_type, today_data, yesterday_data, today_accumulated_data=None):

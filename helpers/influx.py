@@ -21,7 +21,7 @@ class Influx:
     @property
     def client(self):
         if self._client is None:
-            host = os.environ.get("INFLUX_HOST", "localhost")
+            host = os.environ.get("INFLUX_HOST", "192.168.1.10")
             self._client = InfluxDBClient(host, 8086, None, None, "covid19")
 
         return self._client
@@ -74,8 +74,10 @@ class Influx:
         pcrs = self.get_stat_group_by_day(Measurement.PCRS, day)
         deaths = self.get_stat_group_by_day(Measurement.DEATHS, day)
         pcrs_last_24h = self.get_stat_group_by_day(Measurement.PCRS_LAST_24H, day)
+        admitted = self.get_stat_group_by_day(Measurement.ADMITTED_PEOPLE, day)
+        icu = self.get_stat_group_by_day(Measurement.ICU_PEOPLE, day)
 
-        return pcrs, deaths, pcrs_last_24h
+        return pcrs, deaths, pcrs_last_24h, admitted, icu
 
     def get_all_stats_accumulated_until_day(self, day):
         pcrs = self.get_stat_accumulated_until_day(Measurement.PCRS, day)
