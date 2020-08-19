@@ -1,5 +1,6 @@
 from helpers.spain_geography import get_impact_string
 from constants import GRAPH_IMAGE_URL, DATE_FORMAT
+from datetime import timedelta
 
 
 def get_report_by_ccaa(date, today_data, yesterday_data):
@@ -11,7 +12,8 @@ def get_report_by_ccaa(date, today_data, yesterday_data):
 
 
 def get_ccaa_report(ccaa, date, ccaa_today_data, ccaa_yesterday_data):
-    sentences = [f"{ccaa} {date.strftime(DATE_FORMAT)}:", "\n"]
+    date_in_report = date - timedelta(1)
+    sentences = [f"{ccaa} el {date_in_report.strftime(DATE_FORMAT)}:", "\n"]
 
     sentences.append(generate_ccaa_sentence("💉 PCRs", ccaa, ccaa_today_data.get("pcrs"),
                                             ccaa_yesterday_data.get("pcrs"),

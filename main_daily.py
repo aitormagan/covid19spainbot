@@ -19,9 +19,9 @@ def main():
 
     data = influx.get_stat_group_by_day(Measurement.PCRS, today)
 
-    if data:
+    if not data:
         try:
-            # update_database(today)
+            update_database(today)
             publish_report(today, yesterday)
 
         except HTTPError:
