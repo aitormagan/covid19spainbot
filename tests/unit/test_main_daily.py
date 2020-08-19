@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock, call, ANY
 from main_daily import subtract_days_ignoring_weekends, main, Measurement, HTTPError, get_today_numbers, get_header, \
-    get_summary_tweet, publish_report, update_database
+    get_summary_tweet, publish_report, update_database, update_stat
 
 
 class MainDailyUnitTest(unittest.TestCase):
@@ -41,8 +41,7 @@ class MainDailyUnitTest(unittest.TestCase):
 
         main()
 
-        update_database_mock.assert_called_once_with(datetime_mock.now.return_value,
-                                                     subtract_days_ignoring_weekends_mock.return_value)
+        update_database_mock.assert_called_once_with(datetime_mock.now.return_value)
         publish_report_mock.assert_called_once_with(datetime_mock.now.return_value,
                                                     subtract_days_ignoring_weekends_mock.return_value)
         datetime_mock.now.assert_called_once_with()
@@ -63,8 +62,7 @@ class MainDailyUnitTest(unittest.TestCase):
 
         main()
 
-        update_database_mock.assert_called_once_with(datetime_mock.now.return_value,
-                                                     subtract_days_ignoring_weekends_mock.return_value)
+        update_database_mock.assert_called_once_with(datetime_mock.now.return_value)
         publish_report_mock.assert_not_called()
         datetime_mock.now.assert_called_once_with()
         subtract_days_ignoring_weekends_mock.assert_called_once_with(datetime_mock.now.return_value, 1)
@@ -87,8 +85,7 @@ class MainDailyUnitTest(unittest.TestCase):
 
         main()
 
-        update_database_mock.assert_called_once_with(datetime_mock.now.return_value,
-                                                     subtract_days_ignoring_weekends_mock.return_value)
+        update_database_mock.assert_called_once_with(datetime_mock.now.return_value)
         publish_report_mock.assert_not_called()
         datetime_mock.now.assert_called_once_with()
         subtract_days_ignoring_weekends_mock.assert_called_once_with(datetime_mock.now.return_value, 1)
@@ -113,20 +110,23 @@ class MainDailyUnitTest(unittest.TestCase):
 
     @patch("main_daily.SpainCovid19MinistryReport")
     @patch("main_daily.influx")
-    @patch("main_daily.get_today_numbers")
+    @patch("main_daily.update_stat")
     def test_given_pdf_requires_area_when_update_database_then_info_calculated_and_inserted(self,
-                                                                                            get_today_numbers_mock,
+                                                                                            update_stat_mock,
                                                                                             influx_mock,
                                                                                             ministry_report_mock):
 
         today = MagicMock()
-        yesterday = MagicMock()
 
         pcrs_pdf = MagicMock()
         accumulated_pcrs = MagicMock()
         last_24h_pcrs = MagicMock()
         pcrs_pdf.get_column_data.side_effect = [Exception(), accumulated_pcrs, last_24h_pcrs]
         deaths_pdf = MagicMock()
+        accumulated_admitted = MagicMock()
+        accumulated_icu = MagicMock()
+        accumulated_deaths = MagicMock()
+        deaths_pdf.get_column_data.side_effect = [accumulated_admitted, accumulated_icu, accumulated_deaths]
         ministry_report_mock.side_effect = [pcrs_pdf, deaths_pdf, pcrs_pdf]
 
         yesterday_pcrs_accumulated = MagicMock()
@@ -136,42 +136,41 @@ class MainDailyUnitTest(unittest.TestCase):
 
         today_pcrs = MagicMock()
         today_deaths = MagicMock()
-        get_today_numbers_mock.side_effect = [today_pcrs, today_deaths]
+        today_admitted = MagicMock()
+        today_icu = MagicMock()
+        update_stat_mock.side_effect = [today_pcrs, today_deaths, today_admitted, today_icu]
 
-        update_database(today, yesterday)
+        update_database(today)
 
         ministry_report_mock.assert_has_calls([call(today, 1), call(today, 2),
                                                call(today, 1,  (239, 56, 239 + 283, 56 + 756))])
-        pcrs_pdf.get_column_data.assert_has_calls([call(1), call(1), call(2)])
-        deaths_pdf.get_column_data.assert_called_once_with(3)
+        pcrs_pdf.get_column_data.assert_has_calls([call(1), call(2)])
+        deaths_pdf.get_column_data.assert_has_calls([call(1), call(2), call(3)])
 
-        influx_mock.get_stat_accumulated_until_day.assert_has_calls([call(Measurement.PCRS, yesterday),
-                                                                     call(Measurement.DEATHS, yesterday)])
+        update_stat_mock.assert_has_calls([call(Measurement.PCRS, accumulated_pcrs, today),
+                                          call(Measurement.DEATHS, accumulated_deaths, today),
+                                          call(Measurement.ADMITTED_PEOPLE, accumulated_admitted, today),
+                                          call(Measurement.ICU_PEOPLE, accumulated_icu, today)])
 
-        get_today_numbers_mock.assert_has_calls([call(accumulated_pcrs,
-                                                      yesterday_pcrs_accumulated),
-                                                 call(deaths_pdf.get_column_data.return_value,
-                                                      yesterday_deaths_accumulated)])
-
-        influx_mock.insert_stats_in_influx.assert_has_calls([call(Measurement.PCRS, today, today_pcrs),
-                                                             call(Measurement.DEATHS, today, today_deaths),
-                                                             call(Measurement.PCRS_LAST_24H, today,
-                                                                  last_24h_pcrs)])
+        influx_mock.insert_stats_in_influx.assert_called_once_with(Measurement.PCRS_LAST_24H, today, last_24h_pcrs)
 
     @patch("main_daily.SpainCovid19MinistryReport")
     @patch("main_daily.influx")
-    @patch("main_daily.get_today_numbers")
-    def test_when_update_database_then_info_calculated_and_inserted(self, get_today_numbers_mock,
+    @patch("main_daily.update_stat")
+    def test_when_update_database_then_info_calculated_and_inserted(self, update_stat_mock,
                                                                     influx_mock, ministry_report_mock):
 
         today = MagicMock()
-        yesterday = MagicMock()
 
         pcrs_pdf = MagicMock()
         accumulated_pcrs = MagicMock()
         last_24h_pcrs = MagicMock()
         pcrs_pdf.get_column_data.side_effect = [accumulated_pcrs, last_24h_pcrs]
         deaths_pdf = MagicMock()
+        accumulated_admitted = MagicMock()
+        accumulated_icu = MagicMock()
+        accumulated_deaths = MagicMock()
+        deaths_pdf.get_column_data.side_effect = [accumulated_admitted, accumulated_icu, accumulated_deaths]
         ministry_report_mock.side_effect = [pcrs_pdf, deaths_pdf]
 
         yesterday_pcrs_accumulated = MagicMock()
@@ -181,26 +180,38 @@ class MainDailyUnitTest(unittest.TestCase):
 
         today_pcrs = MagicMock()
         today_deaths = MagicMock()
-        get_today_numbers_mock.side_effect = [today_pcrs, today_deaths]
+        today_admitted = MagicMock()
+        today_icu = MagicMock()
+        update_stat_mock.side_effect = [today_pcrs, today_deaths, today_admitted, today_icu]
 
-        update_database(today, yesterday)
+        update_database(today)
 
         ministry_report_mock.assert_has_calls([call(today, 1), call(today, 2)])
         pcrs_pdf.get_column_data.assert_has_calls([call(1), call(2)])
-        deaths_pdf.get_column_data.assert_called_once_with(3)
+        deaths_pdf.get_column_data.assert_has_calls([call(1), call(2), call(3)])
 
-        influx_mock.get_stat_accumulated_until_day.assert_has_calls([call(Measurement.PCRS, yesterday),
-                                                                     call(Measurement.DEATHS, yesterday)])
+        update_stat_mock.assert_has_calls([call(Measurement.PCRS, accumulated_pcrs, today),
+                                          call(Measurement.DEATHS, accumulated_deaths, today),
+                                          call(Measurement.ADMITTED_PEOPLE, accumulated_admitted, today),
+                                          call(Measurement.ICU_PEOPLE, accumulated_icu, today)])
 
-        get_today_numbers_mock.assert_has_calls([call(accumulated_pcrs,
-                                                      yesterday_pcrs_accumulated),
-                                                 call(deaths_pdf.get_column_data.return_value,
-                                                      yesterday_deaths_accumulated)])
+        influx_mock.insert_stats_in_influx.assert_called_once_with(Measurement.PCRS_LAST_24H, today, last_24h_pcrs)
 
-        influx_mock.insert_stats_in_influx.assert_has_calls([call(Measurement.PCRS, today, today_pcrs),
-                                                             call(Measurement.DEATHS, today, today_deaths),
-                                                             call(Measurement.PCRS_LAST_24H, today,
-                                                                  last_24h_pcrs)])
+    @patch("main_daily.influx")
+    @patch("main_daily.get_today_numbers")
+    def test_given_data_and_date_when_update_stat_then_info_calculated_stored_and_returned(self, get_today_numbers_mock,
+                                                                                           influx_mock):
+        stat = MagicMock()
+        date = MagicMock()
+        accumulated_today = MagicMock()
+
+        result = update_stat(stat, accumulated_today, date)
+
+        self.assertEqual(result, get_today_numbers_mock.return_value)
+        get_today_numbers_mock.assert_called_once_with(accumulated_today,
+                                                       influx_mock.get_stat_accumulated_until_day.return_value)
+        influx_mock.get_stat_accumulated_until_day.assert_called_once_with(stat, date)
+        influx_mock.insert_stats_in_influx.assert_called_once_with(stat, date, get_today_numbers_mock.return_value)
 
     def test_given_today_and_yesterday_data_when_get_today_numbers_then_subtraction_returned(self):
         today = {"Madrid": 100, "Cataluña": 90}

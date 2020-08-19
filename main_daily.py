@@ -21,7 +21,7 @@ def main():
 
     if not data:
         try:
-            update_database(today, yesterday)
+            update_database(today)
             publish_report(today, yesterday)
 
         except HTTPError:
@@ -44,7 +44,7 @@ def subtract_days_ignoring_weekends(initial_date, days_to_substract):
     return result
 
 
-def update_database(today, yesterday):
+def update_database(today):
     pcrs_report = SpainCovid19MinistryReport(today, 1)
     deaths_report = SpainCovid19MinistryReport(today, 2)
 
@@ -56,20 +56,27 @@ def update_database(today, yesterday):
         pcrs_report = SpainCovid19MinistryReport(today, 1, (239, 56, 239 + 283, 56 + 756))
         accumulated_pcrs_today = pcrs_report.get_column_data(1)
 
+    accumulated_admitted_today = deaths_report.get_column_data(1)
+    accumulated_icu_today = deaths_report.get_column_data(2)
     accumulated_deaths_today = deaths_report.get_column_data(3)
 
-    accumulated_pcrs_yesterday = influx.get_stat_accumulated_until_day(Measurement.PCRS, yesterday)
-    accumulated_deaths_yesterday = influx.get_stat_accumulated_until_day(Measurement.DEATHS, yesterday)
+    today_pcrs = update_stat(Measurement.PCRS, accumulated_pcrs_today, today)
+    today_deaths = update_stat(Measurement.DEATHS, accumulated_deaths_today, today)
+    today_admitted = update_stat(Measurement.ADMITTED_PEOPLE, accumulated_admitted_today, today)
+    today_uci = update_stat(Measurement.ICU_PEOPLE, accumulated_icu_today, today)
 
-    today_pcrs = get_today_numbers(accumulated_pcrs_today, accumulated_pcrs_yesterday)
-    today_deaths = get_today_numbers(accumulated_deaths_today, accumulated_deaths_yesterday)
     today_pcrs_last_24h = pcrs_report.get_column_data(2)
-
-    influx.insert_stats_in_influx(Measurement.PCRS, today, today_pcrs)
-    influx.insert_stats_in_influx(Measurement.DEATHS, today, today_deaths)
     influx.insert_stats_in_influx(Measurement.PCRS_LAST_24H, today, today_pcrs_last_24h)
 
-    return today_pcrs, today_deaths, today_pcrs_last_24h
+    return today_pcrs, today_deaths, today_pcrs_last_24h, today_admitted, today_uci
+
+
+def update_stat(stat, accumulated_today, today):
+    accumulated_yesterday = influx.get_stat_accumulated_until_day(stat, today)
+    today_number = get_today_numbers(accumulated_today, accumulated_yesterday)
+    influx.insert_stats_in_influx(stat, today, today_number)
+
+    return today_number
 
 
 def get_today_numbers(today_accumulated, yesterday_accumulated):

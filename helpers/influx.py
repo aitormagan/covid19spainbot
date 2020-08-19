@@ -8,6 +8,8 @@ class Measurement(Enum):
     PCRS = "pcrs"
     DEATHS = "deaths"
     PCRS_LAST_24H = "pcrs_last_24h"
+    ICU_PEOPLE = "icu_people"
+    ADMITTED_PEOPLE = "admitted_people"
 
 
 class Influx:
