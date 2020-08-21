@@ -152,7 +152,7 @@ class MainDailyUnitTest(unittest.TestCase):
                                           call(Measurement.ADMITTED_PEOPLE, accumulated_admitted, today),
                                           call(Measurement.ICU_PEOPLE, accumulated_icu, today)])
 
-        influx_mock.insert_stats_in_influx.assert_called_once_with(Measurement.PCRS_LAST_24H, today, last_24h_pcrs)
+        influx_mock.insert_stats.assert_called_once_with(Measurement.PCRS_LAST_24H, today, last_24h_pcrs)
 
     @patch("main_daily.SpainCovid19MinistryReport")
     @patch("main_daily.influx")
@@ -195,7 +195,7 @@ class MainDailyUnitTest(unittest.TestCase):
                                           call(Measurement.ADMITTED_PEOPLE, accumulated_admitted, today),
                                           call(Measurement.ICU_PEOPLE, accumulated_icu, today)])
 
-        influx_mock.insert_stats_in_influx.assert_called_once_with(Measurement.PCRS_LAST_24H, today, last_24h_pcrs)
+        influx_mock.insert_stats.assert_called_once_with(Measurement.PCRS_LAST_24H, today, last_24h_pcrs)
 
     @patch("main_daily.influx")
     @patch("main_daily.get_today_numbers")
@@ -211,7 +211,7 @@ class MainDailyUnitTest(unittest.TestCase):
         get_today_numbers_mock.assert_called_once_with(accumulated_today,
                                                        influx_mock.get_stat_accumulated_until_day.return_value)
         influx_mock.get_stat_accumulated_until_day.assert_called_once_with(stat, date)
-        influx_mock.insert_stats_in_influx.assert_called_once_with(stat, date, get_today_numbers_mock.return_value)
+        influx_mock.insert_stats.assert_called_once_with(stat, date, get_today_numbers_mock.return_value)
 
     def test_given_today_and_yesterday_data_when_get_today_numbers_then_subtraction_returned(self):
         today = {"Madrid": 100, "Cataluña": 90}

@@ -1,56 +1,70 @@
+from collections import defaultdict
 from helpers.spain_geography import get_impact_string
-from constants import GRAPH_IMAGE_URL, DATE_FORMAT
-from datetime import timedelta
+from helpers.db import Measurement
+from constants import GRAPH_IMAGE_URL
 
 
-def get_report_by_ccaa(date, today_data, yesterday_data):
+def get_report_by_ccaa(date_in_header, ccaas_today_data, ccaas_yesterday_data, ccaas_accumulated_data):
     tweets = []
-    for ccaa in today_data:
-        tweets.append(get_ccaa_report(ccaa, date, today_data[ccaa], yesterday_data[ccaa]))
+    for ccaa in sorted(ccaas_today_data.keys()):
+        tweets.append(get_territorial_unit_report(ccaa, date_in_header, ccaas_today_data[ccaa],
+                                                  ccaas_yesterday_data[ccaa], ccaas_accumulated_data[ccaa]))
 
     return tweets
 
 
-def get_ccaa_report(ccaa, date, ccaa_today_data, ccaa_yesterday_data):
-    date_in_report = date - timedelta(1)
-    sentences = [f"{ccaa} el {date_in_report.strftime(DATE_FORMAT)}:", "\n"]
+def get_global_report(date_in_header, ccaas_today_data, ccaas_yesterday_data, ccaas_accumulated_data):
+    global_today_data = get_global_data(ccaas_today_data)
+    global_yesterday_data = get_global_data(ccaas_yesterday_data)
+    global_accumulated_data = get_global_data(ccaas_accumulated_data)
 
-    sentences.append(generate_ccaa_sentence("💉 PCRs", ccaa, ccaa_today_data.get("pcrs"),
-                                            ccaa_yesterday_data.get("pcrs"),
-                                            ccaa_today_data.get("accumulated_pcrs")))
+    return get_territorial_unit_report("🇪🇸 España", date_in_header, global_today_data, global_yesterday_data,
+                                       global_accumulated_data)
 
-    sentences.append(generate_ccaa_sentence("💉 PCRs 24h", ccaa, ccaa_today_data.get("pcrs_last24h"),
-                                            ccaa_yesterday_data.get("pcrs_last24h")))
-    sentences.append(generate_ccaa_sentence("😢 Muertes", ccaa, ccaa_today_data.get("deaths"),
-                                            ccaa_yesterday_data.get("deaths"),
-                                            ccaa_today_data.get("accumulated_deaths")))
 
-    sentences.append("\n")
+def get_global_data(dict_to_unpack):
+    keys = set([key for ccaa in dict_to_unpack for key in dict_to_unpack[ccaa].keys()])
 
-    sentences.append(generate_ccaa_sentence("🚑 Hospitalizados", ccaa, ccaa_today_data.get("admitted"),
-                                            ccaa_yesterday_data.get("admitted")))
-    sentences.append(generate_ccaa_sentence("🏥 UCI", ccaa, ccaa_today_data.get("icu"),
-                                            ccaa_yesterday_data.get("icu")))
+    result = defaultdict(lambda: 0)
+    for key in keys:
+        for ccaa in dict_to_unpack:
+            result[key] += dict_to_unpack[ccaa][key]
+
+    return result
+
+
+def get_territorial_unit_report(territorial_unit, date_in_header, today_data, yesterday_data, accumulated_data):
+    sentences = [f"{territorial_unit} - {date_in_header}:", "\n",
+                 generate_report_sentence("💉 PCRs", territorial_unit,
+                                          today_data.get(Measurement.PCRS),
+                                          yesterday_data.get(Measurement.PCRS),
+                                          accumulated_data.get(Measurement.PCRS)),
+                 generate_report_sentence("💉 PCRs 24h", territorial_unit,
+                                          today_data.get(Measurement.PCRS_LAST_24H),
+                                          yesterday_data.get(Measurement.PCRS_LAST_24H)),
+                 generate_report_sentence("😢 Muertes", territorial_unit,
+                                          today_data.get(Measurement.DEATHS),
+                                          yesterday_data.get(Measurement.DEATHS),
+                                          accumulated_data.get(Measurement.DEATHS)),
+                 "\n",
+                 # FIXME!! Be aware! Data seems to be inconsistent
+                 generate_report_sentence("🚑 Hospitalizados", territorial_unit,
+                                          today_data.get(Measurement.ADMITTED_PEOPLE),
+                                          yesterday_data.get(Measurement.ADMITTED_PEOPLE)),
+                 generate_report_sentence("🏥 UCI", territorial_unit,
+                                          today_data.get(Measurement.ICU_PEOPLE),
+                                          yesterday_data.get(Measurement.ICU_PEOPLE))
+                 ]
 
     return "\n".join(sentences)
 
 
-def generate_ccaa_sentence(stat, ccaa, today_total, yesterday_total, acumulated=None):
-    total_sentence = "(Totales: {0:,})".format(acumulated) if acumulated else ""
-    sentence = "{0}: {1:+} {2} {3} {4}".format(stat, today_total, get_impact_string(today_total, ccaa),
-                                               get_tendency_emoji(today_total, yesterday_total),
-                                               total_sentence).replace(",", ".").strip()
+def generate_report_sentence(stat, ccaa, today_total, yesterday_total, accumulated=None):
+    total_sentence = "(Totales: {0:,})".format(accumulated) if accumulated else ""
+    sentence = "{0}: {1:+,} {2} {3} {4}".format(stat, today_total, get_impact_string(today_total, ccaa),
+                                                get_tendency_emoji(today_total, yesterday_total),
+                                                total_sentence).replace(",", ".").strip()
 
-    return " ".join(sentence.split())
-
-
-def get_human_summary(stat_type, today_data, yesterday_data, today_accumulated_data=None):
-    today_total = sum(today_data.values())
-    yesteday_total = sum(yesterday_data.values())
-    total_sentence = "(Totales: {0:,})".format(sum(today_accumulated_data.values())) if today_accumulated_data else ""
-    sentence = "{0}: {1:+} {2} {3} {4}".format(stat_type, today_total, get_impact_string(today_total),
-                                               get_tendency_emoji(today_total, yesteday_total),
-                                               total_sentence).replace(",", ".").strip()
     return " ".join(sentence.split())
 
 
@@ -58,9 +72,9 @@ def get_tendency_emoji(today_number, yesterday_number):
     if yesterday_number is None:
         return ""
     elif today_number > yesterday_number:
-        return '🔺{0}'.format(today_number - yesterday_number)
+        return '🔺{0:,}'.format(today_number - yesterday_number)
     elif yesterday_number > today_number:
-        return '🔻{0}'.format(yesterday_number - today_number)
+        return '🔻{0:,}'.format(yesterday_number - today_number)
     else:
         return '🔙'
 

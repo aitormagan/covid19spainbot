@@ -1,10 +1,9 @@
 import logging
 import sys
 from datetime import timedelta, datetime
-from helpers.influx import Influx, Measurement
+from helpers.db import Influx
 from helpers.twitter import Twitter
-from helpers.reports import get_report_by_ccaa, get_human_summary, get_graph_url
-from constants import DATE_FORMAT
+from helpers.reports import get_report_by_ccaa, get_global_report, get_graph_url
 
 influx = Influx()
 twitter = Twitter()
@@ -13,38 +12,29 @@ twitter = Twitter()
 def main():
     date = datetime.now()
 
-    pcrs_current_week = influx.get_stat_group_by_week(Measurement.PCRS, date)
-    pcrs_previous_week = influx.get_stat_group_by_week(Measurement.PCRS, date - timedelta(7))
-    deaths_current_week = influx.get_stat_group_by_week(Measurement.DEATHS, date)
-    deaths_previous_week = influx.get_stat_group_by_week(Measurement.DEATHS, date - timedelta(7))
+    today_data = influx.get_all_stats_group_by_week(date)
+    yesterday_data = influx.get_all_stats_group_by_week(date - timedelta(7))
+    accumulated_data = influx.get_all_stats_accumulated_until_day(date)
+    date_header = get_date_header(date)
 
-    pcrs_report = get_report_by_ccaa(pcrs_current_week, pcrs_previous_week)
-    deaths_report = get_report_by_ccaa(deaths_current_week, deaths_previous_week)
-
-    twitter.publish_tweets(pcrs_report, get_header("PCR+", date))
-    twitter.publish_tweets(deaths_report, get_header("Muertes", date))
-
-    today_pcrs_accumulated, today_deaths_accumulated = influx.get_all_stats_accumulated_until_day(date)
-    pcrs_summary = get_human_summary("PCR+", pcrs_current_week, pcrs_previous_week, today_pcrs_accumulated)
-    deaths_summary = get_human_summary("Muertes", deaths_current_week, deaths_previous_week, today_deaths_accumulated)
-
+    tweets = get_report_by_ccaa(date_header, today_data, yesterday_data, accumulated_data)
+    last_id = twitter.publish_tweets(tweets)
+    spain_report = get_global_report(date_header, today_data, yesterday_data, accumulated_data)
     graph_url = get_graph_url(date - timedelta(7), date - timedelta(2))
-    twitter.publish_tweet_with_media(get_week_summary_tweet(date, pcrs_summary, deaths_summary), graph_url)
+    last_id = twitter.publish_tweet_with_media(spain_report, graph_url, last_id)
+    twitter.publish_tweet(get_final_tweet(), last_id)
 
 
-def get_header(stat_type, date):
+def get_date_header(date):
+    date_format = "%d/%m"
     monday = date + timedelta(0 - date.weekday())
     sunday = date + timedelta(6 - date.weekday())
-    return "{0} reportadas la semana del {1} al {2}".format(stat_type, monday.strftime(DATE_FORMAT),
-                                                            sunday.strftime(DATE_FORMAT))
+    return "{0} al {1}".format(monday.strftime(date_format),
+                               sunday.strftime(date_format))
 
 
-def get_week_summary_tweet(date, pcrs_summary, deaths_summary):
-    monday = date + timedelta(0 - date.weekday())
-    sunday = date + timedelta(6 - date.weekday())
-    items = ["Resumen España la semana del {0} al {1}:".format(monday.strftime(DATE_FORMAT),
-                                                               sunday.strftime(DATE_FORMAT)),
-             "", pcrs_summary, deaths_summary, "",
+def get_final_tweet():
+    items = ["¡Accede a los gráficos interactivos!", "",
              "Evolución ➡️ https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1&var-group_by=1w,4d"]
     return "\n".join(list(filter(lambda x: x is not None, items)))
 

@@ -36,7 +36,7 @@ class Twitter:
     def publish_tweet_with_media(self, tweet, media_url, in_response_to=None):
         with NamedTemporaryFile(suffix=".png") as temp_file:
             self._download_file(media_url, temp_file)
-            self.client.update_with_media(temp_file.name, tweet, in_reply_to_status_id=in_response_to)
+            return self.client.update_with_media(temp_file.name, tweet, in_reply_to_status_id=in_response_to).id
 
     @staticmethod
     def _download_file(media_url, file):

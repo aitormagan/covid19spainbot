@@ -1,7 +1,7 @@
 from datetime import datetime
 import unittest
 from unittest.mock import patch, MagicMock, call
-from helpers.influx import Influx, Measurement
+from helpers.db import Influx, Measurement
 
 
 class InfluxUnitTest(unittest.TestCase):
@@ -37,7 +37,7 @@ class InfluxUnitTest(unittest.TestCase):
             self._influx = Influx()
             self._influx.client = MagicMock()
 
-            self._influx.insert_stats_in_influx(stats, date, data)
+            self._influx.insert_stats(stats, date, data)
 
             self._influx.client.write_points.assert_called_once_with(expected_calls)
 

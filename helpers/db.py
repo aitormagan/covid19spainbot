@@ -1,6 +1,7 @@
 from enum import Enum
 import os
 from datetime import timedelta
+from collections import defaultdict
 from influxdb import InfluxDBClient
 
 
@@ -26,7 +27,7 @@ class Influx:
 
         return self._client
 
-    def insert_stats_in_influx(self, measurement: Measurement, date, data):
+    def insert_stats(self, measurement: Measurement, date, data):
         influx_data = []
         for ccaa in data:
             influx_data.append({
@@ -70,6 +71,21 @@ class Influx:
 
         return ccaa_map
 
+    def get_all_stats_group_by_week(self, day):
+        pcrs = self.get_stat_group_by_week(Measurement.PCRS, day)
+        deaths = self.get_stat_group_by_week(Measurement.DEATHS, day)
+        pcrs_last_24h = self.get_stat_group_by_week(Measurement.PCRS_LAST_24H, day)
+        admitted = self.get_stat_group_by_week(Measurement.ADMITTED_PEOPLE, day)
+        icu = self.get_stat_group_by_week(Measurement.ICU_PEOPLE, day)
+
+        return self._pack_elements(**{
+            Measurement.PCRS.value: pcrs,
+            Measurement.DEATHS.value: deaths,
+            Measurement.PCRS_LAST_24H.value: pcrs_last_24h,
+            Measurement.ADMITTED_PEOPLE.value: admitted,
+            Measurement.ICU_PEOPLE.value: icu
+        })
+
     def get_all_stats_group_by_day(self, day):
         pcrs = self.get_stat_group_by_day(Measurement.PCRS, day)
         deaths = self.get_stat_group_by_day(Measurement.DEATHS, day)
@@ -77,10 +93,31 @@ class Influx:
         admitted = self.get_stat_group_by_day(Measurement.ADMITTED_PEOPLE, day)
         icu = self.get_stat_group_by_day(Measurement.ICU_PEOPLE, day)
 
-        return pcrs, deaths, pcrs_last_24h, admitted, icu
+        return self._pack_elements(**{
+            Measurement.PCRS.value: pcrs,
+            Measurement.DEATHS.value: deaths,
+            Measurement.PCRS_LAST_24H.value: pcrs_last_24h,
+            Measurement.ADMITTED_PEOPLE.value: admitted,
+            Measurement.ICU_PEOPLE.value: icu
+        })
 
     def get_all_stats_accumulated_until_day(self, day):
         pcrs = self.get_stat_accumulated_until_day(Measurement.PCRS, day)
         deaths = self.get_stat_accumulated_until_day(Measurement.DEATHS, day)
 
-        return pcrs, deaths
+        return self._pack_elements(**{
+            Measurement.PCRS.value: pcrs,
+            Measurement.DEATHS.value: deaths
+        })
+
+    @staticmethod
+    def _pack_elements(*_, **kwargs):
+
+        keys = set([key for arg in kwargs for key in kwargs[arg].keys()])
+
+        result = defaultdict(lambda: dict())
+        for key in keys:
+            for measurement in kwargs:
+                result[key][Measurement(measurement)] = kwargs[measurement].get(key, None)
+
+        return result
