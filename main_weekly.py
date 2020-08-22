@@ -49,5 +49,4 @@ if __name__ == '__main__':
                         format='%(asctime)s %(levelname)s %(message)s',
                         stream=sys.stdout)
 
-    # main()
-    print(get_final_tweet())
+    main()
