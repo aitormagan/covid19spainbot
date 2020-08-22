@@ -95,7 +95,6 @@ class MainDailyUnitTest(unittest.TestCase):
         self.assertEqual(280, len(dm_text))
         self.assertTrue(dm_text.startswith(f"There was an unhandled exception. Trace:\n\n{exception_text}"))
 
-
     def test_given_no_weekends_when_subtract_days_ignoring_weekends_then_no_gaps(self):
         date = datetime(2020, 7, 29)
         self.assertEqual(datetime(2020, 7, 27), subtract_days_ignoring_weekends(date, 2))
