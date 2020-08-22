@@ -114,9 +114,13 @@ def get_date_header(date):
 
 
 def get_final_tweet():
-    items = ["¡Accede a los gráficos interactivos!", "",
+    items = ["¡Accede a los gráficos interactivos!",
+             "",
              "Evolución ➡️ https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1",
-             "Comparación ➡️ https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1"]
+             "Comparación ➡️ https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1"
+             "",
+             "* Los datos de nuevos hospitalizados e ingresados en UCI se basan en en la Tabla 2 del "
+             "informe diario de Sanidad."]
 
     return "\n".join(list(filter(lambda x: x is not None, items)))
 

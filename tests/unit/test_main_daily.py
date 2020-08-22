@@ -1,8 +1,8 @@
 import unittest
 from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock, call, ANY
-from main_daily import subtract_days_ignoring_weekends, main, Measurement, HTTPError, get_today_numbers, get_header, \
-    get_summary_tweet, publish_report, update_database, update_stat
+from main_daily import subtract_days_ignoring_weekends, main, Measurement, HTTPError, get_today_numbers, \
+    publish_report, update_database, update_stat, get_date_header, get_final_tweet
 
 
 class MainDailyUnitTest(unittest.TestCase):
@@ -229,80 +229,60 @@ class MainDailyUnitTest(unittest.TestCase):
     @patch("main_daily.influx")
     @patch("main_daily.get_report_by_ccaa")
     @patch("main_daily.twitter")
-    @patch("main_daily.get_human_summary")
-    @patch("main_daily.get_summary_tweet")
-    @patch("main_daily.get_header")
-    def test_when_publish_report_then_info_calculated_and_published(self, get_header_mock, get_summary_tweet_mock,
-                                                                    get_human_summary_mock, twitter_mock,
+    @patch("main_daily.get_global_report")
+    @patch("main_daily.get_final_tweet")
+    @patch("main_daily.get_date_header")
+    def test_when_publish_report_then_info_calculated_and_published(self, get_date_header_mock, get_final_tweet_mock,
+                                                                    get_global_report_mock, twitter_mock,
                                                                     get_report_by_ccaa_mock, influx_mock,
                                                                     get_graph_url_mock):
         today = datetime(2020, 8, 6)
         yesterday = datetime(2020, 8, 5)
 
-        today_pcrs_report = MagicMock()
-        today_pcrs24h_report = MagicMock()
-        today_deaths_report = MagicMock()
-        yesterday_pcrs_report = MagicMock()
-        yesterday_pcrs24h_report = MagicMock()
-        yesterday_deaths_report = MagicMock()
-        today_pcrs_accumulated_report = MagicMock()
-        today_deaths_accumulated_report = MagicMock()
+        today_data = MagicMock()
+        yesterday_data = MagicMock()
+        accumulated_data = MagicMock()
 
-        influx_mock.get_all_stats_group_by_day.side_effect = [(today_pcrs_report, today_deaths_report,
-                                                               today_pcrs24h_report),
-                                                              (yesterday_pcrs_report, yesterday_deaths_report,
-                                                               yesterday_pcrs24h_report)]
+        influx_mock.get_all_stats_group_by_day.side_effect = [today_data, yesterday_data]
 
-        influx_mock.get_all_stats_accumulated_until_day.return_value = (today_pcrs_accumulated_report,
-                                                                        today_deaths_accumulated_report)
+        influx_mock.get_all_stats_accumulated_until_day.return_value = accumulated_data
 
         publish_report(today, yesterday)
 
         influx_mock.get_all_stats_group_by_day.assert_has_calls([call(today), call(yesterday)])
-        get_report_by_ccaa_mock.assert_has_calls([call(today_pcrs_report, yesterday_pcrs_report),
-                                                  call(today_deaths_report, yesterday_deaths_report)])
-        get_header_mock.assert_has_calls([call("PCR+", today), call("Muertes", today)])
+        get_report_by_ccaa_mock.assert_called_once_with(get_date_header_mock.return_value, today_data, yesterday_data,
+                                                        accumulated_data)
+        get_date_header_mock.assert_called_once_with(today)
 
         influx_mock.get_all_stats_accumulated_until_day.assert_called_once_with(today)
-        get_human_summary_mock.assert_has_calls([call("PCR+", today_pcrs_report, yesterday_pcrs_report,
-                                                      today_pcrs_accumulated_report),
-                                                 call("PCR+ 24h", today_pcrs24h_report, yesterday_pcrs24h_report),
-                                                 call("Muertes", today_deaths_report, yesterday_deaths_report,
-                                                      today_deaths_accumulated_report)])
+        get_global_report_mock.assert_called_once_with(get_date_header_mock.return_value, today_data, yesterday_data,
+                                                       accumulated_data)
 
-        get_summary_tweet_mock.assert_called_once_with(today, get_human_summary_mock.return_value,
-                                                       get_human_summary_mock.return_value,
-                                                       get_human_summary_mock.return_value)
-
-        publish_tweet_call = call(get_report_by_ccaa_mock.return_value, get_header_mock.return_value)
-        twitter_mock.publish_tweets.assert_has_calls([publish_tweet_call, publish_tweet_call])
-        twitter_mock.publish_tweet_with_media.assert_called_once_with(get_summary_tweet_mock.return_value,
-                                                                      get_graph_url_mock.return_value)
+        twitter_mock.publish_tweets.assert_has_calls(get_report_by_ccaa_mock.return_value)
+        twitter_mock.publish_tweet_with_media.assert_called_once_with(get_global_report_mock.return_value,
+                                                                      get_graph_url_mock.return_value,
+                                                                      twitter_mock.publish_tweets.return_value)
+        twitter_mock.publish_tweet.assert_called_once_with(get_final_tweet_mock.return_value,
+                                                           twitter_mock.publish_tweet_with_media.return_value)
         get_graph_url_mock.assert_called_once_with(today - timedelta(31), today)
 
-    def test_given_monday_when_get_header_then_weekend_text_included(self):
+    def test_given_monday_when_get_date_header_then_weekend_text_included(self):
         date = datetime(2020, 7, 27)
-        stat = "PCR+"
 
-        header = get_header(stat, date)
+        header = get_date_header(date)
 
-        self.assertEqual("PCR+ reportadas el fin de semana del 26/07/2020", header)
+        self.assertEqual("24/07/2020 al 26/07/2020", header)
 
-    def test_given_tuesday_when_get_header_then_weekend_text_not_included(self):
+    def test_given_tuesday_when_get_date_header_then_weekend_text_not_included(self):
         date = datetime(2020, 7, 28)
-        stat = "PCR+"
 
-        header = get_header(stat, date)
+        header = get_date_header(date)
 
-        self.assertEqual("PCR+ reportadas el 27/07/2020", header)
+        self.assertEqual("27/07/2020", header)
 
     def test_when_get_summary_tweet_then_date_is_correct(self):
-        date = datetime(2020, 7, 27)
-        pcrs_summary = "pcrs_summary"
-        pcrs24_summary = "pcrs24h_summary"
-        deaths_summary = "deaths_summary"
 
-        summary = get_summary_tweet(date, pcrs_summary, pcrs24_summary, deaths_summary)
+        summary = get_final_tweet()
 
-        self.assertTrue(summary.startswith("Resumen España al finalizar el 26/07/2020:\n\n{0}\n{1}\n{2}".format(
-            pcrs_summary, pcrs24_summary, deaths_summary)))
+        self.assertTrue("Evolución ➡️ https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1" in summary)
+        self.assertTrue("Comparación ➡️ https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1" in summary)
