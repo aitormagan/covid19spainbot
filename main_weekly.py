@@ -29,13 +29,18 @@ def get_date_header(date):
     date_format = "%d/%m"
     monday = date + timedelta(0 - date.weekday())
     sunday = date + timedelta(6 - date.weekday())
-    return "{0} al {1}".format(monday.strftime(date_format),
-                               sunday.strftime(date_format))
+    return "Sem. {0} al {1}".format(monday.strftime(date_format),
+                                    sunday.strftime(date_format))
 
 
 def get_final_tweet():
-    items = ["¡Accede a los gráficos interactivos!", "",
-             "Evolución ➡️ https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1&var-group_by=1w,4d"]
+    items = ["¡Accede a los gráficos interactivos!",
+             "",
+             "Evolución ➡️ https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1&var-group_by=1w,4d",
+             "",
+             "* Los datos de nuevos hospitalizados e ingresados en UCI se basan en en la Tabla 2 del "
+             "informe diario de Sanidad."
+             ]
     return "\n".join(list(filter(lambda x: x is not None, items)))
 
 
@@ -44,4 +49,5 @@ if __name__ == '__main__':
                         format='%(asctime)s %(levelname)s %(message)s',
                         stream=sys.stdout)
 
-    main()
+    # main()
+    print(get_final_tweet())
