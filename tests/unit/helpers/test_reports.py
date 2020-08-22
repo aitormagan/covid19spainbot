@@ -2,7 +2,7 @@ from datetime import datetime
 import unittest
 from unittest.mock import patch, call, MagicMock
 from helpers.reports import get_tendency_emoji, get_report_sentence, get_report_by_ccaa, get_graph_url, \
-    get_global_report, get_global_data
+    get_global_report, get_global_data, get_territorial_unit_report
 from helpers.db import Measurement
 from constants import GRAPH_IMAGE_URL
 
@@ -114,6 +114,41 @@ class ReportsUnitTest(unittest.TestCase):
             Measurement.PCRS: pcrs1 + pcrs2,
             Measurement.DEATHS: deaths1 + deaths2
         }, get_global_data(data))
+
+    @patch("helpers.reports.get_report_sentence")
+    def test_given_data_when_get_territorial_unit_report_then_tweet_returned(self, get_report_sentence_mock):
+
+        territorial_unit = MagicMock()
+        date_header = MagicMock()
+        today_data = MagicMock()
+        yesterday_data = MagicMock()
+        accumulated_data = MagicMock()
+        pcrs = "pcrs"
+        pcrs24h = "pcrs24h"
+        deaths = "deaths"
+        admitted = "admitted"
+        uci = "uci"
+        get_report_sentence_mock.side_effect = [pcrs, pcrs24h, deaths, admitted, uci]
+
+        expected_tweet = f"{territorial_unit} - {date_header}:\n\n{pcrs}\n{pcrs24h}\n{deaths}\n\n{admitted}\n{uci}"
+
+        self.assertEqual(expected_tweet, get_territorial_unit_report(territorial_unit, date_header, today_data,
+                                                                     yesterday_data, accumulated_data))
+
+        get_report_sentence_mock.assert_has_calls([
+            call("💉 PCRs", territorial_unit, today_data.get(Measurement.PCRS),
+                 yesterday_data.get(Measurement.PCRS),
+                 accumulated_data.get(Measurement.PCRS)),
+            call("💉 PCRs 24h", territorial_unit, today_data.get(Measurement.PCRS_LAST_24H),
+                 yesterday_data.get(Measurement.PCRS_LAST_24H)),
+            call("😢 Muertes", territorial_unit, today_data.get(Measurement.DEATHS),
+                 yesterday_data.get(Measurement.DEATHS),
+                 accumulated_data.get(Measurement.DEATHS)),
+            call("🚑 Hospitalizados", territorial_unit, today_data.get(Measurement.ADMITTED_PEOPLE),
+                 yesterday_data.get(Measurement.ADMITTED_PEOPLE)),
+            call("🏥 UCI", territorial_unit, today_data.get(Measurement.ICU_PEOPLE),
+                 yesterday_data.get(Measurement.ICU_PEOPLE))
+        ])
 
     @patch("helpers.reports.get_tendency_emoji", return_value="^ 1")
     @patch("helpers.reports.get_impact_string", return_value="(0.21/millón)")
