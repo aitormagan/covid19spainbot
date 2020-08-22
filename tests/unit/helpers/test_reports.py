@@ -1,58 +1,153 @@
 from datetime import datetime
 import unittest
-from unittest.mock import patch, call
-from helpers.reports import get_tendency_emoji, get_human_summary, get_report_by_ccaa, get_graph_url
+from unittest.mock import patch, call, MagicMock
+from helpers.reports import get_tendency_emoji, get_report_sentence, get_report_by_ccaa, get_graph_url, \
+    get_global_report, get_global_data
+from helpers.db import Measurement
 from constants import GRAPH_IMAGE_URL
 
 
 class ReportsUnitTest(unittest.TestCase):
 
+    @patch("helpers.reports.get_territorial_unit_report")
+    def test_given_data_when_get_report_by_ccaa_then_report_returned(self, get_territorial_unit_report_mock):
+        ccaa1 = "Melilla"
+        ccaa2 = "Andalucia"
+        data_header = "data_header"
+        today_data = {
+            ccaa1: MagicMock(),
+            ccaa2: MagicMock()
+        }
+        yesterday_data = {
+            ccaa1: MagicMock(),
+            ccaa2: MagicMock()
+        }
+        accumulated_data = {
+            ccaa1: MagicMock(),
+            ccaa2: MagicMock()
+        }
+
+        result = get_report_by_ccaa(data_header, today_data, yesterday_data, accumulated_data)
+
+        self.assertEqual([get_territorial_unit_report_mock.return_value,
+                          get_territorial_unit_report_mock.return_value], result)
+
+        # Note: info is published in alphabetical order
+        get_territorial_unit_report_mock.assert_has_calls([
+            call(ccaa2, data_header, today_data[ccaa2], yesterday_data[ccaa2], accumulated_data[ccaa2]),
+            call(ccaa1, data_header, today_data[ccaa1], yesterday_data[ccaa1], accumulated_data[ccaa1])
+        ])
+
+    @patch("helpers.reports.get_territorial_unit_report")
+    @patch("helpers.reports.get_global_data")
+    def test_given_data_when_get_gloval_report_then_report_returned(self, get_global_data_mock,
+                                                                    get_territorial_unit_report_mock):
+        ccaa1 = "Melilla"
+        ccaa2 = "Andalucia"
+        data_header = "data_header"
+        today_data = {
+            ccaa1: MagicMock(),
+            ccaa2: MagicMock()
+        }
+        yesterday_data = {
+            ccaa1: MagicMock(),
+            ccaa2: MagicMock()
+        }
+        accumulated_data = {
+            ccaa1: MagicMock(),
+            ccaa2: MagicMock()
+        }
+
+        global_today_data = MagicMock()
+        global_yesterday_data = MagicMock()
+        global_accumulated_data = MagicMock()
+        get_global_data_mock.side_effect = [global_today_data, global_yesterday_data, global_accumulated_data]
+
+        result = get_global_report(data_header, today_data, yesterday_data, accumulated_data)
+
+        self.assertEqual(get_territorial_unit_report_mock.return_value, result)
+
+        get_territorial_unit_report_mock.assert_called_once_with("🇪🇸 España", data_header, global_today_data,
+                                                                 global_yesterday_data, global_accumulated_data)
+        get_global_data_mock.assert_has_calls([call(today_data),
+                                               call(yesterday_data),
+                                               call(accumulated_data)])
+
+    def test_given_no_data_when_global_data_then_empty_dict_returned(self):
+        self.assertEqual({}, get_global_data({}))
+
+    def test_given_data_for_one_ccaa_when_global_data_then_ccaa_data_returned(self):
+        ccaa = "Melilla"
+        pcrs = 100
+        deaths = 4
+        data = {
+            ccaa: {
+                Measurement.PCRS: pcrs,
+                Measurement.DEATHS: deaths
+            }
+        }
+
+        self.assertEqual({
+            Measurement.PCRS: pcrs,
+            Measurement.DEATHS: deaths
+        }, get_global_data(data))
+
+    def test_given_data_for_two_ccaa_when_global_data_then_sum_values_returned(self):
+        ccaa1 = "Melilla"
+        pcrs1 = 100
+        deaths1 = 4
+        ccaa2 = "Andalucia"
+        pcrs2 = 400
+        deaths2 = 7
+        data = {
+            ccaa1: {
+                Measurement.PCRS: pcrs1,
+                Measurement.DEATHS: deaths1
+            },
+            ccaa2: {
+                Measurement.PCRS: pcrs2,
+                Measurement.DEATHS: deaths2
+            }
+        }
+
+        self.assertEqual({
+            Measurement.PCRS: pcrs1 + pcrs2,
+            Measurement.DEATHS: deaths1 + deaths2
+        }, get_global_data(data))
+
     @patch("helpers.reports.get_tendency_emoji", return_value="^ 1")
     @patch("helpers.reports.get_impact_string", return_value="(0.21/millón)")
-    def test_given_data_when_get_report_by_ccaa_then_report_returned(self, get_impact_mock, get_tendency_emoji_mock):
-        today_data = {"Madrid": 7, "Cataluña": 3}
-        yesterday_data = {"Madrid": 2, "Cataluña": 9}
+    def test_given_accumulated_when_get_report_sentence_then_report_includes_accumulated(self, get_impact_mock,
+                                                                                         get_tendency_emoji_mock):
+        stat = "PCRS"
+        ccaa = "Madrid"
+        today_value = 1000
+        yesterday_value = 500
+        today_accumulated = 8000
+        result = get_report_sentence(stat, ccaa, today_value, yesterday_value, today_accumulated)
 
-        result = get_report_by_ccaa(today_data, yesterday_data)
+        self.assertEqual("{0}: +1.000 {1} {2} (Totales: 8.000)".format(stat, get_impact_mock.return_value,
+                                                                       get_tendency_emoji_mock.return_value), result)
 
-        self.assertEqual(["Madrid: +7 {0} {1}".format(get_impact_mock.return_value,
-                                                      get_tendency_emoji_mock.return_value),
-                          "Cataluña: +3 {0} {1}".format(get_impact_mock.return_value,
-                                                        get_tendency_emoji_mock.return_value)], result)
-
-        get_impact_mock.assert_has_calls([call(7, "Madrid"), call(3, "Cataluña")])
-        get_tendency_emoji_mock.assert_has_calls([call(7, 2), call(3, 9)])
-
-    @patch("helpers.reports.get_tendency_emoji", return_value="^ 1")
-    @patch("helpers.reports.get_impact_string", return_value="(0.21/millón)")
-    def test_given_accumulated_when_get_human_summary_then_report_includes_accumulated(self, get_impact_mock,
-                                                                                       get_tendency_emoji_mock):
-        today_data = {"Madrid": 7, "Cataluña": 3}
-        yesterday_data = {"Madrid": 2, "Cataluña": 9}
-        today_accumulated = {"Madrid": 9000, "Cataluña": 11123}
-
-        result = get_human_summary("PCR+", today_data, yesterday_data, today_accumulated)
-
-        self.assertEqual("PCR+: +10 {0} {1} (Totales: 20.123)".format(get_impact_mock.return_value,
-                                                                      get_tendency_emoji_mock.return_value), result)
-
-        get_impact_mock.assert_called_once_with(10)
-        get_tendency_emoji_mock.assert_called_once_with(10, 11)
+        get_impact_mock.assert_called_once_with(today_value, ccaa)
+        get_tendency_emoji_mock.assert_called_once_with(today_value, yesterday_value)
 
     @patch("helpers.reports.get_tendency_emoji", return_value="^ 1")
     @patch("helpers.reports.get_impact_string", return_value="(0.21/millón)")
-    def test_given_no_accumulated_when_get_human_summary_then_report_no_include_accumulated(self, get_impact_mock,
-                                                                                            get_tendency_emoji_mock):
-        today_data = {"Madrid": 7, "Cataluña": 3}
-        yesterday_data = {"Madrid": 2, "Cataluña": 9}
+    def test_given_no_accumulated_when_get_report_sentence_then_report_no_include_accumulated(self, get_impact_mock,
+                                                                                              get_tendency_emoji_mock):
 
-        result = get_human_summary("PCR+", today_data, yesterday_data)
+        stat = "PCRS"
+        ccaa = "Madrid"
+        today_value = 1000
+        yesterday_value = 500
+        result = get_report_sentence(stat, ccaa, today_value, yesterday_value)
 
-        self.assertEqual("PCR+: +10 {0} {1}".format(get_impact_mock.return_value,
-                                                    get_tendency_emoji_mock.return_value), result)
+        self.assertEqual("{0}: +1.000 {1} {2}".format(stat, get_impact_mock.return_value,
+                                                      get_tendency_emoji_mock.return_value), result)
 
-        get_impact_mock.assert_called_once_with(10)
-        get_tendency_emoji_mock.assert_called_once_with(10, 11)
+        get_impact_mock.assert_called_once_with(today_value, ccaa)
+        get_tendency_emoji_mock.assert_called_once_with(today_value, yesterday_value)
 
     def test_given_no_yesterday_when_get_tendency_icon_then_empty_returned(self):
         emoji = get_tendency_emoji(20, None)

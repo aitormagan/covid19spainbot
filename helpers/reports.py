@@ -35,33 +35,27 @@ def get_global_data(dict_to_unpack):
 
 def get_territorial_unit_report(territorial_unit, date_in_header, today_data, yesterday_data, accumulated_data):
     sentences = [f"{territorial_unit} - {date_in_header}:", "\n",
-                 generate_report_sentence("💉 PCRs", territorial_unit,
-                                          today_data.get(Measurement.PCRS),
-                                          yesterday_data.get(Measurement.PCRS),
-                                          accumulated_data.get(Measurement.PCRS)),
-                 generate_report_sentence("💉 PCRs 24h", territorial_unit,
-                                          today_data.get(Measurement.PCRS_LAST_24H),
-                                          yesterday_data.get(Measurement.PCRS_LAST_24H)),
-                 generate_report_sentence("😢 Muertes", territorial_unit,
-                                          today_data.get(Measurement.DEATHS),
-                                          yesterday_data.get(Measurement.DEATHS),
-                                          accumulated_data.get(Measurement.DEATHS)),
+                 get_report_sentence("💉 PCRs", territorial_unit, today_data.get(Measurement.PCRS),
+                                     yesterday_data.get(Measurement.PCRS), accumulated_data.get(Measurement.PCRS)),
+                 get_report_sentence("💉 PCRs 24h", territorial_unit, today_data.get(Measurement.PCRS_LAST_24H),
+                                     yesterday_data.get(Measurement.PCRS_LAST_24H)),
+                 get_report_sentence("😢 Muertes", territorial_unit, today_data.get(Measurement.DEATHS),
+                                     yesterday_data.get(Measurement.DEATHS), accumulated_data.get(Measurement.DEATHS)),
                  "\n",
                  # FIXME!! Be aware! Data seems to be inconsistent
-                 generate_report_sentence("🚑 Hospitalizados", territorial_unit,
-                                          today_data.get(Measurement.ADMITTED_PEOPLE),
-                                          yesterday_data.get(Measurement.ADMITTED_PEOPLE)),
-                 generate_report_sentence("🏥 UCI", territorial_unit,
-                                          today_data.get(Measurement.ICU_PEOPLE),
-                                          yesterday_data.get(Measurement.ICU_PEOPLE))
+                 get_report_sentence("🚑 Hospitalizados", territorial_unit, today_data.get(Measurement.ADMITTED_PEOPLE),
+                                     yesterday_data.get(Measurement.ADMITTED_PEOPLE)),
+                 get_report_sentence("🏥 UCI", territorial_unit, today_data.get(Measurement.ICU_PEOPLE),
+                                     yesterday_data.get(Measurement.ICU_PEOPLE))
                  ]
 
     return "\n".join(sentences)
 
 
-def generate_report_sentence(stat, ccaa, today_total, yesterday_total, accumulated=None):
+def get_report_sentence(stat, territorial_unit, today_total, yesterday_total, accumulated=None):
     total_sentence = "(Totales: {0:,})".format(accumulated) if accumulated else ""
-    sentence = "{0}: {1:+,} {2} {3} {4}".format(stat, today_total, get_impact_string(today_total, ccaa),
+    sentence = "{0}: {1:+,} {2} {3} {4}".format(stat, today_total,
+                                                get_impact_string(today_total, territorial_unit),
                                                 get_tendency_emoji(today_total, yesterday_total),
                                                 total_sentence).replace(",", ".").strip()
 
