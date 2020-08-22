@@ -25,85 +25,30 @@ class TwitterUnitTest(unittest.TestCase):
 
     def test_when_publish_tweets_then_split_and_publish(self):
         twitter = Twitter()
-        twitter._split_tweets = MagicMock()
-        twitter._publish_tweets = MagicMock()
-        sentences = MagicMock()
-        header = MagicMock()
+        tweet1_id = 123
+        tweet2_id = 456
+        tweet1 = "test1"
+        tweet2 = "test2"
+        twitter.publish_tweet = MagicMock(side_effect=[tweet1_id, tweet2_id])
+        tweets = [tweet1, tweet2]
 
-        twitter.publish_tweets(sentences, header)
+        last_tweet_id = twitter.publish_tweets(tweets)
 
-        twitter._split_tweets.assert_called_once_with(sentences, header)
-        twitter._publish_tweets.assert_called_once_with(twitter._split_tweets.return_value)
+        self.assertEqual(tweet2_id, last_tweet_id)
+        twitter.publish_tweet.assert_has_calls([call(tweet1, None),
+                                                call(tweet2, tweet1_id)])
 
-    def test_given_one_short_sentence_without_header_when_split_tweets_then_one_tweet_returned(self):
-
-        sentence = "this is a shot sentence"
-        sentences = [sentence]
-        twitter = Twitter()
-
-        result = twitter._split_tweets(sentences, None)
-
-        self.assertEqual(sentences, result)
-
-    def test_given_one_short_sentence_with_header_when_split_tweets_then_sentence_with_header_returned(self):
-
-        sentence = "this is a shot sentence"
-        header = "this is a header"
-        sentences = [sentence]
-        twitter = Twitter()
-
-        result = twitter._split_tweets(sentences, header)
-
-        self.assertEqual([header + " (1/1):\n\n" + sentence], result)
-
-    def test_given_sentences_with_length_below_280_with_header_when_split_tweets_then_one_tweet_returned(self):
-        sentence1 = "this is a shot sentence"
-        sentence2 = "this is another sentence"
-        header = "this is a header"
-        sentences = [sentence1, sentence2]
-        twitter = Twitter()
-
-        result = twitter._split_tweets(sentences, header)
-
-        self.assertEqual([header + " (1/1):\n\n" + sentence1 + "\n" + sentence2], result)
-
-    def test_given_sentences_with_length_above_280_with_header_when_split_tweets_then_two_tweet_returned(self):
-        sentence = "this is a shot sentence"
-        header = "this is a header"
-        sentences = 20 * [sentence]
-        twitter = Twitter()
-
-        result = twitter._split_tweets(sentences, header)
-
-        self.assertEqual(2, len(result))
-        self.assertTrue(result[0].startswith(header + " (1/2):\n\n"))
-        self.assertTrue(result[1].startswith(header + " (2/2):\n\n"))
-
-    def test_no_emoji_in_text_when_get_tweet_length_then_normal_length_returned(self):
-        twitter = Twitter()
-        sentence = "this is a test"
-
-        self.assertEqual(len(sentence), twitter._get_tweet_length(sentence))
-
-    def test_one_emoji_in_text_when_get_tweet_length_then_length_plus_1_returned(self):
-        twitter = Twitter()
-        sentence = "this is a test 🔺"
-
-        self.assertEqual(len(sentence) + 1, twitter._get_tweet_length(sentence))
-
-    def test_given_tweets_when_publish_tweets_then_client_called(self):
+    def test_given_tweet_when_publish_tweet_then_client_called(self):
         with patch.object(Twitter, 'client'):
             twitter = Twitter()
             twitter.client = MagicMock()
+            tweet = MagicMock()
+            in_response_to = MagicMock()
 
-            tweet1 = "text1"
-            tweet2 = "text2"
-            tweets = [tweet1, tweet2]
+            tweet_id = twitter.publish_tweet(tweet, in_response_to)
 
-            twitter._publish_tweets(tweets)
-
-            twitter.client.update_status.assert_has_calls([call(tweet1, None),
-                                                           call(tweet2, twitter.client.update_status.return_value.id)])
+            self.assertEqual(twitter.client.update_status.return_value.id, tweet_id)
+            twitter.client.update_status.assert_called_once_with(tweet, in_response_to)
 
     def test_when_send_dm_error_then_send_dm_called(self):
         with patch.object(Twitter, 'client'):
@@ -124,14 +69,17 @@ class TwitterUnitTest(unittest.TestCase):
             twitter._download_file = MagicMock()
             url = "http://example.com/file.jpg"
             text = "this is an example"
+            in_response_to = MagicMock()
 
-            twitter.publish_tweet_with_media(text, url)
+            tweet_id = twitter.publish_tweet_with_media(text, url, in_response_to)
 
+            self.assertEqual(twitter.client.update_with_media.return_value.id, tweet_id)
             temp_file_mock.assert_called_once_with(suffix=".png")
 
             with temp_file_mock.return_value as temp_file:
                 twitter._download_file.assert_called_once_with(url, temp_file)
-                twitter.client.update_with_media.assert_called_once_with(temp_file.name, text)
+                twitter.client.update_with_media.assert_called_once_with(temp_file.name, text,
+                                                                         in_reply_to_status_id=in_response_to)
 
     @patch("helpers.twitter.requests")
     def test_given_file_cannot_be_downloaded_when_download_file_then_exception_risen(self, requests_mock):
