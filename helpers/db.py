@@ -22,7 +22,7 @@ class Influx:
     @property
     def client(self):
         if self._client is None:
-            host = os.environ.get("INFLUX_HOST", "192.168.1.10")
+            host = os.environ.get("INFLUX_HOST", "localhost")
             self._client = InfluxDBClient(host, 8086, None, None, "covid19")
 
         return self._client

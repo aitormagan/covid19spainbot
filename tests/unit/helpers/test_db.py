@@ -1,4 +1,5 @@
 from datetime import datetime
+from collections import defaultdict
 import unittest
 from unittest.mock import patch, MagicMock, call
 from helpers.db import Influx, Measurement
@@ -6,8 +7,8 @@ from helpers.db import Influx, Measurement
 
 class InfluxUnitTest(unittest.TestCase):
 
-    @patch("helpers.influx.InfluxDBClient")
-    @patch("helpers.influx.os")
+    @patch("helpers.db.InfluxDBClient")
+    @patch("helpers.db.os")
     def test_given_no_client_defined_when_access_client_then_client_is_built(self, os_mock, influxdbclient_mock):
         influx = Influx()
 
@@ -92,27 +93,98 @@ class InfluxUnitTest(unittest.TestCase):
 
     def test_when_get_all_stats_group_by_day_then_three_value_returned(self):
         influx = Influx()
+        influx._pack_elements = MagicMock()
         influx.get_stat_group_by_day = MagicMock()
         date = MagicMock()
 
         result = influx.get_all_stats_group_by_day(date)
 
-        get_stat_group_by_day_result = influx.get_stat_group_by_day.return_value
-        self.assertEqual((get_stat_group_by_day_result, get_stat_group_by_day_result,
-                          get_stat_group_by_day_result), result)
+        self.assertEqual(influx._pack_elements.return_value, result)
 
-        influx.get_stat_group_by_day.assert_has_calls([call(Measurement.PCRS, date), call(Measurement.DEATHS, date),
-                                                       call(Measurement.PCRS_LAST_24H, date)])
+        influx.get_stat_group_by_day.assert_has_calls([call(Measurement.PCRS, date),
+                                                       call(Measurement.DEATHS, date),
+                                                       call(Measurement.PCRS_LAST_24H, date),
+                                                       call(Measurement.ADMITTED_PEOPLE, date),
+                                                       call(Measurement.ICU_PEOPLE, date)])
+
+    def test_when_get_all_stats_group_by_week_then_three_value_returned(self):
+        influx = Influx()
+        influx._pack_elements = MagicMock()
+        influx.get_stat_group_by_week = MagicMock()
+        date = MagicMock()
+
+        result = influx.get_all_stats_group_by_week(date)
+
+        self.assertEqual(influx._pack_elements.return_value, result)
+
+        influx.get_stat_group_by_week.assert_has_calls([call(Measurement.PCRS, date),
+                                                        call(Measurement.DEATHS, date),
+                                                        call(Measurement.PCRS_LAST_24H, date),
+                                                        call(Measurement.ADMITTED_PEOPLE, date),
+                                                        call(Measurement.ICU_PEOPLE, date)])
 
     def test_when_get_all_stats_accumulated_until_day_then_two_value_returned(self):
         influx = Influx()
+        influx._pack_elements = MagicMock()
         influx.get_stat_accumulated_until_day = MagicMock()
         date = MagicMock()
 
         result = influx.get_all_stats_accumulated_until_day(date)
 
-        get_stat_accumulated_until_day_result = influx.get_stat_accumulated_until_day.return_value
-        self.assertEqual((get_stat_accumulated_until_day_result, get_stat_accumulated_until_day_result), result)
+        self.assertEqual(influx._pack_elements.return_value, result)
 
         influx.get_stat_accumulated_until_day.assert_has_calls([call(Measurement.PCRS, date),
                                                                 call(Measurement.DEATHS, date)])
+
+    def test_given_no_args_when_pack_elements_then_empty_dict_returned(self):
+
+        self.assertEqual(defaultdict(), Influx._pack_elements(**{}))
+
+    def test_given_one_arg_when_pack_elements_then_dict_reversed(self):
+
+        ccaa1 = 'Andalucia'
+        ccaa2 = 'Castilla-La Mancha'
+        ccaa1_value = 1
+        ccaa2_value = 2
+
+        arguments = {
+            Measurement.PCRS.value: {ccaa1: ccaa1_value, ccaa2: ccaa2_value}
+        }
+
+        expected_result = {
+            ccaa1: {
+                Measurement.PCRS: ccaa1_value
+            },
+            ccaa2: {
+                Measurement.PCRS: ccaa2_value
+            }
+        }
+
+        self.assertEqual(expected_result, Influx._pack_elements(**arguments))
+
+    def test_given_two_arg_when_pack_elements_then_dict_packed(self):
+
+        ccaa1 = 'Andalucia'
+        ccaa2 = 'Castilla-La Mancha'
+        ccaa1_value = 1
+        ccaa2_value = 2
+        ccaa1_value_deaths = 4
+        ccaa2_value_deaths = 3
+
+        arguments = {
+            Measurement.PCRS.value: {ccaa1: ccaa1_value, ccaa2: ccaa2_value},
+            Measurement.DEATHS.value: {ccaa1: ccaa1_value_deaths, ccaa2: ccaa2_value_deaths}
+        }
+
+        expected_result = {
+            ccaa1: {
+                Measurement.PCRS: ccaa1_value,
+                Measurement.DEATHS: ccaa1_value_deaths
+            },
+            ccaa2: {
+                Measurement.PCRS: ccaa2_value,
+                Measurement.DEATHS: ccaa2_value_deaths
+            }
+        }
+
+        self.assertEqual(expected_result, Influx._pack_elements(**arguments))
