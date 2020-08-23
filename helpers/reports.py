@@ -54,24 +54,26 @@ def get_territorial_unit_report(territorial_unit, date_in_header, today_data, ye
 
 
 def get_report_sentence(stat, territorial_unit, today_total, yesterday_total, accumulated=None):
-    total_sentence = "(Totales: {0:,})".format(accumulated) if accumulated else ""
-    sentence = "{0}: {1:+,} {2} {3} {4}".format(stat, today_total,
-                                                get_impact_string(today_total, territorial_unit),
-                                                get_tendency_emoji(today_total, yesterday_total),
-                                                total_sentence).replace(",", ".").strip()
+    total_sentence = "(Totales: {0:,})".format(accumulated).replace(",", ".") if accumulated else ""
+    sentence = "{0}: {1} {2} {3} {4}".format(stat, "{0:+,}".format(today_total).replace(",", "."),
+                                             get_impact_string(today_total, territorial_unit),
+                                             get_tendency_emoji(today_total, yesterday_total),
+                                             total_sentence).strip()
 
     return " ".join(sentence.split())
 
 
 def get_tendency_emoji(today_number, yesterday_number):
     if yesterday_number is None:
-        return ""
+        result = ""
     elif today_number > yesterday_number:
-        return '🔺{0:,}'.format(today_number - yesterday_number)
+        result = '🔺{0:,}'.format(today_number - yesterday_number)
     elif yesterday_number > today_number:
-        return '🔻{0:,}'.format(yesterday_number - today_number)
+        result = '🔻{0:,}'.format(yesterday_number - today_number)
     else:
-        return '🔙'
+        result = '🔙'
+
+    return result.replace(",", ".")
 
 
 def get_graph_url(start=None, end=None, additional_vars=None):

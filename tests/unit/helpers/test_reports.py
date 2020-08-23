@@ -151,7 +151,7 @@ class ReportsUnitTest(unittest.TestCase):
         ])
 
     @patch("helpers.reports.get_tendency_emoji", return_value="^ 1")
-    @patch("helpers.reports.get_impact_string", return_value="(0.21/millón)")
+    @patch("helpers.reports.get_impact_string", return_value="(0,21/millón)")
     def test_given_accumulated_when_get_report_sentence_then_report_includes_accumulated(self, get_impact_mock,
                                                                                          get_tendency_emoji_mock):
         stat = "PCRS"
@@ -168,7 +168,7 @@ class ReportsUnitTest(unittest.TestCase):
         get_tendency_emoji_mock.assert_called_once_with(today_value, yesterday_value)
 
     @patch("helpers.reports.get_tendency_emoji", return_value="^ 1")
-    @patch("helpers.reports.get_impact_string", return_value="(0.21/millón)")
+    @patch("helpers.reports.get_impact_string", return_value="(0,21/millón)")
     def test_given_no_accumulated_when_get_report_sentence_then_report_no_include_accumulated(self, get_impact_mock,
                                                                                               get_tendency_emoji_mock):
 
@@ -190,14 +190,14 @@ class ReportsUnitTest(unittest.TestCase):
         self.assertEqual("", emoji)
 
     def test_given_today_higher_than_yesterday_when_get_tendency_icon_then_upwards_triangle_returned(self):
-        emoji = get_tendency_emoji(20, 15)
+        emoji = get_tendency_emoji(2000, 15)
 
-        self.assertEqual("🔺5", emoji)
+        self.assertEqual("🔺1.985", emoji)
 
     def test_given_today_lower_than_yesterday_when_get_tendency_icon_then_downwards_triangle_returned(self):
-        emoji = get_tendency_emoji(15, 20)
+        emoji = get_tendency_emoji(15, 2000)
 
-        self.assertEqual("🔻5", emoji)
+        self.assertEqual("🔻1.985", emoji)
 
     def test_given_today_equals_than_yesterday_when_get_tendency_icon_then_back_arrow_returned(self):
         emoji = get_tendency_emoji(20, 20)
