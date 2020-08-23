@@ -34,14 +34,15 @@ def get_global_data(dict_to_unpack):
 
 
 def get_territorial_unit_report(territorial_unit, date_in_header, today_data, yesterday_data, accumulated_data):
-    sentences = [f"{territorial_unit} - {date_in_header}:\n",
+    sentences = [f"{territorial_unit} - {date_in_header}:",
+                 "",
                  get_report_sentence("💉 PCRs", territorial_unit, today_data.get(Measurement.PCRS),
                                      yesterday_data.get(Measurement.PCRS), accumulated_data.get(Measurement.PCRS)),
                  get_report_sentence("💉 PCRs 24h", territorial_unit, today_data.get(Measurement.PCRS_LAST_24H),
                                      yesterday_data.get(Measurement.PCRS_LAST_24H)),
                  get_report_sentence("😢 Muertes", territorial_unit, today_data.get(Measurement.DEATHS),
-                                     yesterday_data.get(Measurement.DEATHS), accumulated_data.get(Measurement.DEATHS))
-                 + "\n",
+                                     yesterday_data.get(Measurement.DEATHS), accumulated_data.get(Measurement.DEATHS)),
+                 "",
                  # FIXME!! Be aware! Data seems to be inconsistent
                  get_report_sentence("🚑 Hospitalizados", territorial_unit, today_data.get(Measurement.ADMITTED_PEOPLE),
                                      yesterday_data.get(Measurement.ADMITTED_PEOPLE)),
