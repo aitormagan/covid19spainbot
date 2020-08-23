@@ -44,6 +44,7 @@ export API_SECRET="<YOUR_API_SECRET>"
 export API_SECRET_KEY="<YOUR_API_SECRET_KEY>"
 export ACCESS_TOKEN="<YOUR_ACCESS_TOKEN>"
 export ACCESS_TOKEN_SECRET="<YOUR_ACCESS_TOKEN_SECRET>"
+export INFLUX_HOST="<INFLUX_HOST>"
 
 python3 <PATH_TO_REPO_FOLDER>/main_daily.py     # Daily
 python3 <PATH_TO_REPO_FOLDER>/main_weekly.py    # Weekly
