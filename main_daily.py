@@ -3,10 +3,9 @@ import logging
 from datetime import datetime, timedelta
 from urllib.error import HTTPError
 from helpers.twitter import Twitter
-from helpers.influx import Influx, Measurement
+from helpers.db import Influx, Measurement
 from helpers.ministry_report import SpainCovid19MinistryReport
-from helpers.reports import get_report_by_ccaa, get_human_summary, get_graph_url
-from constants import DATE_FORMAT
+from helpers.reports import get_report_by_ccaa, get_graph_url, get_global_report
 
 twitter = Twitter()
 influx = Influx()
@@ -66,7 +65,7 @@ def update_database(today):
     today_uci = update_stat(Measurement.ICU_PEOPLE, accumulated_icu_today, today)
 
     today_pcrs_last_24h = pcrs_report.get_column_data(2)
-    influx.insert_stats_in_influx(Measurement.PCRS_LAST_24H, today, today_pcrs_last_24h)
+    influx.insert_stats(Measurement.PCRS_LAST_24H, today, today_pcrs_last_24h)
 
     return today_pcrs, today_deaths, today_pcrs_last_24h, today_admitted, today_uci
 
@@ -74,7 +73,7 @@ def update_database(today):
 def update_stat(stat, accumulated_today, today):
     accumulated_yesterday = influx.get_stat_accumulated_until_day(stat, today)
     today_number = get_today_numbers(accumulated_today, accumulated_yesterday)
-    influx.insert_stats_in_influx(stat, today, today_number)
+    influx.insert_stats(stat, today, today_number)
 
     return today_number
 
@@ -88,35 +87,40 @@ def get_today_numbers(today_accumulated, yesterday_accumulated):
 
 
 def publish_report(today, yesterday):
-    today_pcrs, today_deaths, today_pcrs24h = influx.get_all_stats_group_by_day(today)
-    yesterday_pcrs, yesterday_deaths, yesterday_pcrs24h = influx.get_all_stats_group_by_day(yesterday)
 
-    pcrs_report = get_report_by_ccaa(today_pcrs, yesterday_pcrs)
-    deaths_report = get_report_by_ccaa(today_deaths, yesterday_deaths)
+    today_data = influx.get_all_stats_group_by_day(today)
+    yesterday_data = influx.get_all_stats_group_by_day(yesterday)
+    accumulated_data = influx.get_all_stats_accumulated_until_day(today)
+    date_header = get_date_header(today)
 
-    twitter.publish_tweets(pcrs_report, get_header("PCR+", today))
-    twitter.publish_tweets(deaths_report, get_header("Muertes", today))
-
-    today_pcrs_accumulated, today_deaths_accumulated = influx.get_all_stats_accumulated_until_day(today)
-    pcrs_summary = get_human_summary("PCR+", today_pcrs, yesterday_pcrs, today_pcrs_accumulated)
-    pcrs24h_summary = get_human_summary("PCR+ 24h", today_pcrs24h, yesterday_pcrs24h)
-    deaths_summary = get_human_summary("Muertes", today_deaths, yesterday_deaths, today_deaths_accumulated)
+    tweets = get_report_by_ccaa(date_header, today_data, yesterday_data, accumulated_data)
+    last_id = twitter.publish_tweets(tweets)
+    spain_report = get_global_report(date_header, today_data, yesterday_data, accumulated_data)
     graph_url = get_graph_url(today - timedelta(31), today)
-    twitter.publish_tweet_with_media(get_summary_tweet(today, pcrs_summary, pcrs24h_summary, deaths_summary), graph_url)
+    last_id = twitter.publish_tweet_with_media(spain_report, graph_url, last_id)
+    twitter.publish_tweet(get_final_tweet(), last_id)
 
     logging.info("Tweets published correctly!")
 
 
-def get_header(stat_type, date):
-    return "{0} reportadas el{1}{2}".format(stat_type, " fin de semana del " if date.weekday() == 0 else " ",
-                                            (date - timedelta(1)).strftime(DATE_FORMAT))
+def get_date_header(date):
+    date_format = "%d/%m/%Y"
+    if date.weekday() == 0:
+        date_header = f"{(date - timedelta(3)).strftime(date_format)} al {(date - timedelta(1)).strftime(date_format)}"
+    else:
+        date_header = (date - timedelta(1)).strftime(date_format)
+
+    return date_header
 
 
-def get_summary_tweet(date, pcrs_summary, pcrs24h_summary, deaths_summary):
-    items = ["Resumen España al finalizar el {0}:".format((date - timedelta(1)).strftime(DATE_FORMAT)), "",
-             pcrs_summary, pcrs24h_summary, deaths_summary, "",
+def get_final_tweet():
+    items = ["¡Accede a los gráficos interactivos!",
+             "",
              "Evolución ➡️ https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1",
-             "Comparación ➡️ https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1"]
+             "Comparación ➡️ https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1"
+             "",
+             "* Los datos de nuevos hospitalizados e ingresados en UCI se basan en en la Tabla 2 del "
+             "informe diario de Sanidad."]
 
     return "\n".join(list(filter(lambda x: x is not None, items)))
 
