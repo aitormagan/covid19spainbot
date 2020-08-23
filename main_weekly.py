@@ -20,7 +20,7 @@ def main():
     tweets = get_report_by_ccaa(date_header, today_data, yesterday_data, accumulated_data)
     last_id = twitter.publish_tweets(tweets)
     spain_report = get_global_report(date_header, today_data, yesterday_data, accumulated_data)
-    graph_url = get_graph_url(date - timedelta(7), date - timedelta(2))
+    graph_url = get_graph_url(additional_vars={"group_by": "1w,4d"})
     last_id = twitter.publish_tweet_with_media(spain_report, graph_url, last_id)
     twitter.publish_tweet(get_final_tweet(), last_id)
 

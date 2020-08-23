@@ -46,7 +46,7 @@ class MainWeeklyUnitTest(unittest.TestCase):
                                                                       twitter_mock.publish_tweets.return_value)
         twitter_mock.publish_tweet.assert_called_once_with(get_final_tweet_mock.return_value,
                                                            twitter_mock.publish_tweet_with_media.return_value)
-        get_graph_url_mock.assert_called_once_with(today - timedelta(7), today - timedelta(2))
+        get_graph_url_mock.assert_called_once_with(additional_vars={"group_by": "1w,4d"})
 
     def test_when_get_header_then_monday_and_sunday_included(self):
         date = datetime(2020, 7, 27)

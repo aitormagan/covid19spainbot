@@ -220,3 +220,24 @@ class ReportsUnitTest(unittest.TestCase):
         date2 = datetime(2020, 8, 12)
         self.assertEqual(GRAPH_IMAGE_URL + "&from=" + str(int(date1.strftime("%s")) * 1000) +
                          "&to=" + str(int(date2.strftime("%s")) * 1000), get_graph_url(date1, date2))
+
+    def test_given_start_end_and_var_when_get_graph_url_then_from_to_and_var_included_url_returned(self):
+        date1 = datetime(2020, 8, 6)
+        date2 = datetime(2020, 8, 12)
+        var_name = "group_by"
+        var_value = "1w,4d"
+        self.assertEqual(GRAPH_IMAGE_URL + "&from=" + str(int(date1.strftime("%s")) * 1000) +
+                         "&to=" + str(int(date2.strftime("%s")) * 1000) + f"&var-{var_name}={var_value}",
+                         get_graph_url(date1, date2, {var_name: var_value}))
+
+    def test_given_start_end_and_vars_when_get_graph_url_then_from_to_and_vars_included_url_returned(self):
+        date1 = datetime(2020, 8, 6)
+        date2 = datetime(2020, 8, 12)
+        var1_name = "group_by"
+        var1_value = "1w,4d"
+        var2_name = "ccaa"
+        var2_value = "Madrid"
+        self.assertEqual(GRAPH_IMAGE_URL + "&from=" + str(int(date1.strftime("%s")) * 1000) +
+                         "&to=" + str(int(date2.strftime("%s")) * 1000) +
+                         f"&var-{var1_name}={var1_value}&var-{var2_name}={var2_value}",
+                         get_graph_url(date1, date2, {var1_name: var1_value, var2_name: var2_value}))
