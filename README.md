@@ -14,3 +14,51 @@ Links:
 * Bot: [https://twitter.com/CoronaSpainBot](https://twitter.com/CoronaSpainBot)
 * Dashboard Evolución: [https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1](https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1)
 * Dashboard Comparación: [https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1](https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1)
+
+## Ejecución
+
+El repositorio cuenta con dos scripts: 
+
+* `main_daily`: debe lanzarse de lunes a viernes en intervalos de 5 minutos. Comprueba si se ha publicado el nuevo 
+informe y en caso positivo actualiza la BBDD y publica los tweets.
+* `main_weekly`: debe lanzarse una única vez los domingos para publicar las estadísticas semanales. 
+
+Para planificar la ejecución de ambos scripts puedes hacer uso de `cron`. En concreto, estas son las expresiones que 
+se están usando para cada uno de los scripts:
+
+* `main_daily`: `*/5 16-21 * * 1-5` (cada 5 minutos de 16 a 21h de lunes a viernes)
+* `main_weekly`: `0 18 * * 0` (los domingos a las 18.00h)
+
+Ten en cuenta que deben definirse ciertas variables de entorno para lanzar los scripts:
+
+* `API_SECRET`: Twitter API Secret
+* `API_SECRET_KEY`: Twitter API Secret Key
+* `ACCESS_TOKEN`: Twitter Access Token
+* `ACCESS_TOKEN_SECRET`: Twitter Access Token Secret
+* `INFLUX_HOST`: InfluxDB host
+
+Para la ejecución por tanto, puedes crear unos scripts que defininan dichas variables y lancen los scripts. Por ejemplo:
+
+```
+export API_SECRET="<YOUR_API_SECRET>"
+export API_SECRET_KEY="<YOUR_API_SECRET_KEY>"
+export ACCESS_TOKEN="<YOUR_ACCESS_TOKEN>"
+export ACCESS_TOKEN_SECRET="<YOUR_ACCESS_TOKEN_SECRET>"
+
+python3 <PATH_TO_REPO_FOLDER>/main_daily.py     # Daily
+python3 <PATH_TO_REPO_FOLDER>/main_weekly.py    # Weekly
+```
+
+## Tests
+
+Puedes ejecutar los tests mediante la ejecución del siguiente comando:
+
+```sh
+$ tox
+```
+
+Si no tienes instalado `tox`, puedes instalarlo ejecutando:
+
+```sh
+pip3 install tox
+```
