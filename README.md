@@ -61,5 +61,5 @@ $ tox
 Si no tienes instalado `tox`, puedes instalarlo ejecutando:
 
 ```sh
-pip3 install tox
+$ pip3 install tox
 ```
