@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, call, MagicMock
-from helpers.twitter import Twitter
+from helpers.twitter import Twitter, MediaNotAccessibleError
 
 
 class TwitterUnitTest(unittest.TestCase):
@@ -81,14 +81,37 @@ class TwitterUnitTest(unittest.TestCase):
                 twitter.client.update_with_media.assert_called_once_with(temp_file.name, text,
                                                                          in_reply_to_status_id=in_response_to)
 
+    @patch("helpers.twitter.NamedTemporaryFile")
+    def test_given_exception_downloading_file_when_publish_with_media_then_tweet_without_media_published(self,
+                                                                                                         temp_file_mock):
+        with patch.object(Twitter, 'client'):
+            twitter = Twitter()
+            twitter.client = MagicMock()
+            twitter._download_file = MagicMock(side_effect=MediaNotAccessibleError())
+            twitter.publish_tweet = MagicMock()
+            url = "http://example.com/file.jpg"
+            text = "this is an example"
+            in_response_to = MagicMock()
+
+            tweet_id = twitter.publish_tweet_with_media(text, url, in_response_to)
+
+            self.assertEqual(twitter.publish_tweet.return_value, tweet_id)
+            temp_file_mock.assert_called_once_with(suffix=".png")
+
+            with temp_file_mock.return_value as temp_file:
+                twitter._download_file.assert_called_once_with(url, temp_file)
+                twitter.client.update_with_media.assert_not_called()
+                twitter.publish_tweet.assert_called_once_with(text, in_response_to)
+
     @patch("helpers.twitter.requests")
     def test_given_file_cannot_be_downloaded_when_download_file_then_exception_risen(self, requests_mock):
         requests_mock.get.return_value.status_code = 500
         url = MagicMock()
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(MediaNotAccessibleError) as context:
             Twitter._download_file(url, MagicMock())
 
+        self.assertEqual("File could not be downloaded", str(context.exception))
         requests_mock.get.assert_called_once_with(url)
 
     @patch("helpers.twitter.requests")

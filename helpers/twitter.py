@@ -4,6 +4,10 @@ import tweepy
 import requests
 
 
+class MediaNotAccessibleError(Exception):
+    pass
+
+
 class Twitter:
 
     def __init__(self):
@@ -35,8 +39,11 @@ class Twitter:
 
     def publish_tweet_with_media(self, tweet, media_url, in_response_to=None):
         with NamedTemporaryFile(suffix=".png") as temp_file:
-            self._download_file(media_url, temp_file)
-            return self.client.update_with_media(temp_file.name, tweet, in_reply_to_status_id=in_response_to).id
+            try:
+                self._download_file(media_url, temp_file)
+                return self.client.update_with_media(temp_file.name, tweet, in_reply_to_status_id=in_response_to).id
+            except MediaNotAccessibleError:
+                return self.publish_tweet(tweet, in_response_to)
 
     @staticmethod
     def _download_file(media_url, file):
@@ -48,4 +55,4 @@ class Twitter:
 
             file.flush()
         else:
-            raise Exception("File could not be downloaded")
+            raise MediaNotAccessibleError("File could not be downloaded")
