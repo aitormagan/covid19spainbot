@@ -1,7 +1,8 @@
 from collections import defaultdict
 from helpers.spain_geography import get_impact_string
 from helpers.db import Measurement
-from constants import GRAPH_IMAGE_URL
+from constants import GRAPH_IMAGE_PATH
+import os
 
 
 def get_report_by_ccaa(date_in_header, ccaas_today_data, ccaas_yesterday_data, ccaas_accumulated_data):
@@ -80,5 +81,7 @@ def get_graph_url(start=None, end=None, additional_vars=None):
     vars_str = "&" + "&".join([f"var-{k}={v}" for k, v in additional_vars.items()]) if additional_vars else ""
     start_str = f"&from={int(start.strftime('%s')) * 1000}" if start else ""
     end_str = f"&to={int(end.strftime('%s')) * 1000}" if end else ""
+    grafana_server = os.environ.get("GRAFANA_SERVER", "http://localhost:3000")
 
-    return GRAPH_IMAGE_URL + start_str + end_str + vars_str
+    return os.path.join(grafana_server, GRAPH_IMAGE_PATH) + start_str + end_str + vars_str
+

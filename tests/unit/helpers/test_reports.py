@@ -4,7 +4,9 @@ from unittest.mock import patch, call, MagicMock
 from helpers.reports import get_tendency_emoji, get_report_sentence, get_report_by_ccaa, get_graph_url, \
     get_global_report, get_global_data, get_territorial_unit_report
 from helpers.db import Measurement
-from constants import GRAPH_IMAGE_URL
+from constants import GRAPH_IMAGE_PATH
+
+DEFAULT_GRAPH_IMAGE_URL = "http://localhost:3000/" + GRAPH_IMAGE_PATH
 
 
 class ReportsUnitTest(unittest.TestCase):
@@ -205,20 +207,33 @@ class ReportsUnitTest(unittest.TestCase):
         self.assertEqual("🔙", emoji)
 
     def test_given_no_dates_when_get_graph_url_then_base_url_returned(self):
-        self.assertEqual(GRAPH_IMAGE_URL, get_graph_url())
+        self.assertEqual(DEFAULT_GRAPH_IMAGE_URL, get_graph_url())
+
+    def test_graph_image_path_does_not_start_with_slash(self):
+        self.assertFalse(GRAPH_IMAGE_PATH.startswith("/"))
+
+    @patch("helpers.reports.os.environ", {"GRAFANA_SERVER": "http://grafana-server.com/"})
+    def test_given_custom_grafana_server_when_get_graph_url_then_custom_server_used_returned(self):
+        self.assertEqual("http://grafana-server.com/" + GRAPH_IMAGE_PATH, get_graph_url())
+
+    @patch("helpers.reports.os.environ", {"GRAFANA_SERVER": "http://grafana-server.com"})
+    def test_given_custom_grafana_server_without_final_slash_when_get_graph_url_then_separator_slash_included(self):
+        self.assertEqual("http://grafana-server.com/" + GRAPH_IMAGE_PATH, get_graph_url())
 
     def test_given_start_when_get_graph_url_then_from_included_url_returned(self):
         date = datetime(2020, 8, 6)
-        self.assertEqual(GRAPH_IMAGE_URL + "&from=" + str(int(date.strftime("%s")) * 1000), get_graph_url(date))
+        self.assertEqual(DEFAULT_GRAPH_IMAGE_URL + "&from=" + str(int(date.strftime("%s")) * 1000),
+                         get_graph_url(date))
 
     def test_given_end_when_get_graph_url_then_to_included_url_returned(self):
         date = datetime(2020, 8, 6)
-        self.assertEqual(GRAPH_IMAGE_URL + "&to=" + str(int(date.strftime("%s")) * 1000), get_graph_url(end=date))
+        self.assertEqual(DEFAULT_GRAPH_IMAGE_URL + "&to=" + str(int(date.strftime("%s")) * 1000),
+                         get_graph_url(end=date))
 
     def test_given_start_and_end_when_get_graph_url_then_from_and_to_included_url_returned(self):
         date1 = datetime(2020, 8, 6)
         date2 = datetime(2020, 8, 12)
-        self.assertEqual(GRAPH_IMAGE_URL + "&from=" + str(int(date1.strftime("%s")) * 1000) +
+        self.assertEqual(DEFAULT_GRAPH_IMAGE_URL + "&from=" + str(int(date1.strftime("%s")) * 1000) +
                          "&to=" + str(int(date2.strftime("%s")) * 1000), get_graph_url(date1, date2))
 
     def test_given_start_end_and_var_when_get_graph_url_then_from_to_and_var_included_url_returned(self):
@@ -226,7 +241,7 @@ class ReportsUnitTest(unittest.TestCase):
         date2 = datetime(2020, 8, 12)
         var_name = "group_by"
         var_value = "1w,4d"
-        self.assertEqual(GRAPH_IMAGE_URL + "&from=" + str(int(date1.strftime("%s")) * 1000) +
+        self.assertEqual(DEFAULT_GRAPH_IMAGE_URL + "&from=" + str(int(date1.strftime("%s")) * 1000) +
                          "&to=" + str(int(date2.strftime("%s")) * 1000) + f"&var-{var_name}={var_value}",
                          get_graph_url(date1, date2, {var_name: var_value}))
 
@@ -237,7 +252,7 @@ class ReportsUnitTest(unittest.TestCase):
         var1_value = "1w,4d"
         var2_name = "ccaa"
         var2_value = "Madrid"
-        self.assertEqual(GRAPH_IMAGE_URL + "&from=" + str(int(date1.strftime("%s")) * 1000) +
+        self.assertEqual(DEFAULT_GRAPH_IMAGE_URL + "&from=" + str(int(date1.strftime("%s")) * 1000) +
                          "&to=" + str(int(date2.strftime("%s")) * 1000) +
                          f"&var-{var1_name}={var1_value}&var-{var2_name}={var2_value}",
                          get_graph_url(date1, date2, {var1_name: var1_value, var2_name: var2_value}))

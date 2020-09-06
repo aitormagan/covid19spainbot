@@ -31,11 +31,13 @@ se están usando para cada uno de los scripts:
 
 Ten en cuenta que deben definirse ciertas variables de entorno para lanzar los scripts:
 
-* `API_SECRET`: Twitter API Secret
-* `API_SECRET_KEY`: Twitter API Secret Key
-* `ACCESS_TOKEN`: Twitter Access Token
-* `ACCESS_TOKEN_SECRET`: Twitter Access Token Secret
-* `INFLUX_HOST`: InfluxDB host
+* `API_SECRET`: Twitter API Secret (required)
+* `API_SECRET_KEY`: Twitter API Secret Key (required)
+* `ACCESS_TOKEN`: Twitter Access Token (required)
+* `ACCESS_TOKEN_SECRET`: Twitter Access Token Secret (required)
+* `INFLUX_HOST`: InfluxDB host (not required, default: `localhost`)
+* `GRAFANA_SERVER`: Protocol + Host + Port where Grafana server is hosted (not required, default: 
+`http://localhost:3000/`)
 
 Para la ejecución por tanto, puedes crear unos scripts que defininan dichas variables y lancen los scripts. Por ejemplo:
 
@@ -45,6 +47,7 @@ export API_SECRET_KEY="<YOUR_API_SECRET_KEY>"
 export ACCESS_TOKEN="<YOUR_ACCESS_TOKEN>"
 export ACCESS_TOKEN_SECRET="<YOUR_ACCESS_TOKEN_SECRET>"
 export INFLUX_HOST="<INFLUX_HOST>"
+export GRAFANA_SEVER="<GRAFANA_SERVER>"
 
 python3 <PATH_TO_REPO_FOLDER>/main_daily.py     # Daily
 python3 <PATH_TO_REPO_FOLDER>/main_weekly.py    # Weekly
