@@ -257,12 +257,12 @@ class MainDailyUnitTest(unittest.TestCase):
         get_global_report_mock.assert_called_once_with(get_date_header_mock.return_value, today_data, yesterday_data,
                                                        accumulated_data)
 
-        twitter_mock.publish_tweets.assert_has_calls(get_report_by_ccaa_mock.return_value)
         twitter_mock.publish_tweet_with_media.assert_called_once_with(get_global_report_mock.return_value,
-                                                                      get_graph_url_mock.return_value,
-                                                                      twitter_mock.publish_tweets.return_value)
+                                                                      get_graph_url_mock.return_value)
+        twitter_mock.publish_tweets.assert_called_once_with(get_report_by_ccaa_mock.return_value,
+                                                            twitter_mock.publish_tweet_with_media.return_value)
         twitter_mock.publish_tweet.assert_called_once_with(get_final_tweet_mock.return_value,
-                                                           twitter_mock.publish_tweet_with_media.return_value)
+                                                           twitter_mock.publish_tweets.return_value)
         get_graph_url_mock.assert_called_once_with(today - timedelta(31), today)
 
     def test_given_monday_when_get_date_header_then_weekend_text_included(self):

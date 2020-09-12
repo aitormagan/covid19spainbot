@@ -17,11 +17,12 @@ def main():
     accumulated_data = influx.get_all_stats_accumulated_until_day(date)
     date_header = get_date_header(date)
 
-    tweets = get_report_by_ccaa(date_header, today_data, yesterday_data, accumulated_data)
-    last_id = twitter.publish_tweets(tweets)
     spain_report = get_global_report(date_header, today_data, yesterday_data, accumulated_data)
     graph_url = get_graph_url(additional_vars={"group_by": "1w,4d"})
-    last_id = twitter.publish_tweet_with_media(spain_report, graph_url, last_id)
+    last_id = twitter.publish_tweet_with_media(spain_report, graph_url)
+
+    tweets = get_report_by_ccaa(date_header, today_data, yesterday_data, accumulated_data)
+    last_id = twitter.publish_tweets(tweets, last_id)
     twitter.publish_tweet(get_final_tweet(), last_id)
 
 
@@ -36,11 +37,7 @@ def get_date_header(date):
 def get_final_tweet():
     items = ["¡Accede a los gráficos interactivos!",
              "",
-             "Evolución ➡️ https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1&var-group_by=1w,4d",
-             "",
-             "* Los datos de nuevos hospitalizados e ingresados en UCI se basan en en la Tabla 2 del "
-             "informe diario de Sanidad."
-             ]
+             "Evolución ➡️ https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1&var-group_by=1w,4d"]
     return "\n".join(list(filter(lambda x: x is not None, items)))
 
 

@@ -24,8 +24,7 @@ class Twitter:
 
         return self._client
 
-    def publish_tweets(self, tweets):
-        last_tweet = None
+    def publish_tweets(self, tweets, last_tweet=None):
         for tweet in tweets:
             last_tweet = self.publish_tweet(tweet, last_tweet)
 

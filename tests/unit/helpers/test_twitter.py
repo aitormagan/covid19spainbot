@@ -27,15 +27,16 @@ class TwitterUnitTest(unittest.TestCase):
         twitter = Twitter()
         tweet1_id = 123
         tweet2_id = 456
+        previous_id = 789
         tweet1 = "test1"
         tweet2 = "test2"
         twitter.publish_tweet = MagicMock(side_effect=[tweet1_id, tweet2_id])
         tweets = [tweet1, tweet2]
 
-        last_tweet_id = twitter.publish_tweets(tweets)
+        last_tweet_id = twitter.publish_tweets(tweets, previous_id)
 
         self.assertEqual(tweet2_id, last_tweet_id)
-        twitter.publish_tweet.assert_has_calls([call(tweet1, None),
+        twitter.publish_tweet.assert_has_calls([call(tweet1, previous_id),
                                                 call(tweet2, tweet1_id)])
 
     def test_given_tweet_when_publish_tweet_then_client_called(self):
