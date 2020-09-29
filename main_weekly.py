@@ -15,16 +15,13 @@ def main():
     today_data = delete_pcrs24h(influx.get_all_stats_group_by_week(date))
     last_week_data = delete_pcrs24h(influx.get_all_stats_group_by_week(date - timedelta(7)))
     accumulated_today = delete_pcrs24h(influx.get_all_stats_accumulated_until_day(date))
-    accumulated_two_weeks_ago = delete_pcrs24h(influx.get_all_stats_accumulated_until_day(date - timedelta(14)))
     date_header = get_date_header(date)
 
-    spain_report = get_global_report(date_header, today_data, last_week_data, accumulated_today,
-                                     accumulated_two_weeks_ago)
+    spain_report = get_global_report(date_header, today_data, last_week_data, accumulated_today)
     graph_url = get_graph_url(additional_vars={"group_by": "1w,4d"})
     last_id = twitter.publish_tweet_with_media(spain_report, graph_url)
 
-    tweets = get_report_by_ccaa(date_header, today_data, last_week_data, accumulated_today,
-                                accumulated_two_weeks_ago)
+    tweets = get_report_by_ccaa(date_header, today_data, last_week_data, accumulated_today)
     last_id = twitter.publish_tweets(tweets, last_id)
     twitter.publish_tweet(get_final_tweet(), last_id)
 

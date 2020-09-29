@@ -36,15 +36,15 @@ class SpainCovid19MinistryReport:
             if date > initial_weekend_without_report else 0
         return 105 + (date - reference_date).days - weekends * 2
 
-    def get_column_data(self, column):
+    def get_column_data(self, column, part=0, cast=int):
         ccaas_column = self.data_frame['Unnamed: 0'].astype(str)
         first_ccaa_position = ccaas_column.loc[ccaas_column.str.startswith('Andalucía', na=False)].index[0]
 
         cases = {}
         for i in range(first_ccaa_position, first_ccaa_position + 19):
             ccaa = self.data_frame['Unnamed: 0'][i].replace('*', '')
-            value = self.data_frame[self.data_frame.columns[column]][i].split(' ')[0].replace('.', '').replace('-', '0')
+            value = self.data_frame[self.data_frame.columns[column]][i].split(' ')[part].replace('.', '').replace('-', '0').replace(',', '.')
 
-            cases[ccaa] = int(value)
+            cases[ccaa] = cast(value)
 
         return cases

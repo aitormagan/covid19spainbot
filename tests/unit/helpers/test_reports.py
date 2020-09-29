@@ -28,23 +28,16 @@ class ReportsUnitTest(unittest.TestCase):
             ccaa1: MagicMock(),
             ccaa2: MagicMock()
         }
-        accumulated_two_weeks_ago = {
-            ccaa1: MagicMock(),
-            ccaa2: MagicMock()
-        }
 
-        result = get_report_by_ccaa(data_header, today_data, yesterday_data, accumulated_data,
-                                    accumulated_two_weeks_ago)
+        result = get_report_by_ccaa(data_header, today_data, yesterday_data, accumulated_data)
 
         self.assertEqual([get_territorial_unit_report_mock.return_value,
                           get_territorial_unit_report_mock.return_value], result)
 
         # Note: info is published in alphabetical order
         get_territorial_unit_report_mock.assert_has_calls([
-            call(ccaa2, data_header, today_data[ccaa2], yesterday_data[ccaa2], accumulated_data[ccaa2],
-                 accumulated_two_weeks_ago[ccaa2]),
-            call(ccaa1, data_header, today_data[ccaa1], yesterday_data[ccaa1], accumulated_data[ccaa1],
-                 accumulated_two_weeks_ago[ccaa1])
+            call(ccaa2, data_header, today_data[ccaa2], yesterday_data[ccaa2], accumulated_data[ccaa2]),
+            call(ccaa1, data_header, today_data[ccaa1], yesterday_data[ccaa1], accumulated_data[ccaa1])
         ])
 
     @patch("helpers.reports.get_territorial_unit_report")
@@ -66,23 +59,18 @@ class ReportsUnitTest(unittest.TestCase):
             ccaa1: MagicMock(),
             ccaa2: MagicMock()
         }
-        accumulated_two_weeks_ago = MagicMock()
 
         global_today_data = MagicMock()
         global_yesterday_data = MagicMock()
         global_accumulated_data = MagicMock()
-        global_accumulated_two_weeks_ago = MagicMock()
-        get_global_data_mock.side_effect = [global_today_data, global_yesterday_data, global_accumulated_data,
-                                            global_accumulated_two_weeks_ago]
+        get_global_data_mock.side_effect = [global_today_data, global_yesterday_data, global_accumulated_data]
 
-        result = get_global_report(data_header, today_data, yesterday_data, accumulated_today,
-                                   accumulated_two_weeks_ago)
+        result = get_global_report(data_header, today_data, yesterday_data, accumulated_today)
 
         self.assertEqual(get_territorial_unit_report_mock.return_value, result)
 
         get_territorial_unit_report_mock.assert_called_once_with("🇪🇸 España", data_header, global_today_data,
-                                                                 global_yesterday_data, global_accumulated_data,
-                                                                 global_accumulated_two_weeks_ago)
+                                                                 global_yesterday_data, global_accumulated_data)
         get_global_data_mock.assert_has_calls([call(today_data),
                                                call(yesterday_data),
                                                call(accumulated_today)])
@@ -146,7 +134,6 @@ class ReportsUnitTest(unittest.TestCase):
         }
         yesterday_data = MagicMock()
         accumulated_today = MagicMock()
-        accumulated_two_weeks_ago = MagicMock()
         pcrs = "pcrs"
         pcrs24h = "pcrs24h"
         deaths = "deaths"
@@ -160,12 +147,11 @@ class ReportsUnitTest(unittest.TestCase):
                          f"\n\n{deaths}\n\n{admitted}\n{uci}"
 
         self.assertEqual(expected_tweet, get_territorial_unit_report(territorial_unit, date_header, today_data,
-                                                                     yesterday_data, accumulated_today,
-                                                                     accumulated_two_weeks_ago))
+                                                                     yesterday_data, accumulated_today))
 
-        get_accumulated_impact_sentence_mock.assert_called_once_with("💥 IA 14 días", territorial_unit,
-                                                                     accumulated_today.get(Measurement.PCRS),
-                                                                     accumulated_two_weeks_ago.get(Measurement.PCRS))
+        get_accumulated_impact_sentence_mock.assert_called_once_with("💥 IA 14 días",
+                                                                     today_data.get(Measurement.ACCUMULATED_INCIDENCE),
+                                                                     yesterday_data.get(Measurement.ACCUMULATED_INCIDENCE))
 
         get_report_sentence_mock.assert_has_calls([
             call("💉 PCRs", today_data.get(Measurement.PCRS),
@@ -194,11 +180,11 @@ class ReportsUnitTest(unittest.TestCase):
             Measurement.PCRS: MagicMock(),
             Measurement.DEATHS: MagicMock(),
             Measurement.ADMITTED_PEOPLE: MagicMock(),
-            Measurement.ICU_PEOPLE: MagicMock()
+            Measurement.ICU_PEOPLE: MagicMock(),
+            Measurement.ACCUMULATED_INCIDENCE: MagicMock()
         }
         yesterday_data = MagicMock()
         accumulated_today = MagicMock()
-        accumulated_two_weeks_ago = MagicMock()
         pcrs = "pcrs"
         deaths = "deaths"
         admitted = "admitted"
@@ -211,12 +197,11 @@ class ReportsUnitTest(unittest.TestCase):
                          f"\n\n{deaths}\n\n{admitted}\n{uci}"
 
         self.assertEqual(expected_tweet, get_territorial_unit_report(territorial_unit, date_header, today_data,
-                                                                     yesterday_data, accumulated_today,
-                                                                     accumulated_two_weeks_ago))
+                                                                     yesterday_data, accumulated_today))
 
-        get_accumulated_impact_sentence_mock.assert_called_once_with("💥 IA 14 días", territorial_unit,
-                                                                     accumulated_today.get(Measurement.PCRS),
-                                                                     accumulated_two_weeks_ago.get(Measurement.PCRS))
+        get_accumulated_impact_sentence_mock.assert_called_once_with("💥 IA 14 días",
+                                                                     today_data.get(Measurement.ACCUMULATED_INCIDENCE),
+                                                                     yesterday_data.get(Measurement.ACCUMULATED_INCIDENCE))
 
         get_report_sentence_mock.assert_has_calls([
             call("💉 PCRs", today_data.get(Measurement.PCRS),
@@ -231,17 +216,16 @@ class ReportsUnitTest(unittest.TestCase):
                  yesterday_data.get(Measurement.ICU_PEOPLE))
         ])
 
-    @patch("helpers.reports.get_impact_string", return_value="123")
-    def test_given_data_when_get_accumulated_impact_sentence_then_impact_returned(self, get_impact_string_mock):
+    @patch("helpers.reports.get_tendency_emoji", return_value="^ 1")
+    def test_given_data_when_get_accumulated_impact_sentence_then_impact_returned(self, get_tendency_emoji_mock):
         stat = "IA 14 days"
-        today_cases = 1000
-        two_weeks_ago_cases = 500
-        ccaa = "Castilla León"
+        today_total = 1100.18
+        yesterday_total = 80.10
 
-        self.assertEqual("{0}: {1}".format(stat, get_impact_string_mock.return_value),
-                         get_accumulated_impact_sentence(stat, ccaa, today_cases, two_weeks_ago_cases))
+        self.assertEqual("{0}: {1}/100.000 hab. {2}".format(stat, "1.100,18", get_tendency_emoji_mock.return_value),
+                         get_accumulated_impact_sentence(stat, today_total, yesterday_total))
 
-        get_impact_string_mock.assert_called_once_with(today_cases - two_weeks_ago_cases, ccaa)
+        get_tendency_emoji_mock.assert_called_once_with(today_total, yesterday_total)
 
     @patch("helpers.reports.get_tendency_emoji", return_value="^ 1")
     def test_given_accumulated_when_get_report_sentence_then_report_includes_accumulated(self, get_tendency_emoji_mock):
@@ -282,6 +266,11 @@ class ReportsUnitTest(unittest.TestCase):
         emoji = get_tendency_emoji(15, 2000)
 
         self.assertEqual("🔻1.985", emoji)
+
+    def test_given_today_lower_than_yesterday_with_decimals_when_get_tendency_icon_then_downwards_triangle_returned(self):
+        emoji = get_tendency_emoji(14.99, 1500.01)
+
+        self.assertEqual("🔻1.485,02", emoji)
 
     def test_given_today_equals_than_yesterday_when_get_tendency_icon_then_back_arrow_returned(self):
         emoji = get_tendency_emoji(20, 20)

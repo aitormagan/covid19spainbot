@@ -27,22 +27,20 @@ class MainWeeklyUnitTest(unittest.TestCase):
         today_data = MagicMock()
         previous_week_data = MagicMock()
         accumulated_today = MagicMock()
-        accumulated_two_weeks_ago = MagicMock()
 
         influx_mock.get_all_stats_group_by_week.side_effect = [today_data, previous_week_data]
-        influx_mock.get_all_stats_accumulated_until_day.side_effect = [accumulated_today, accumulated_two_weeks_ago]
+        influx_mock.get_all_stats_accumulated_until_day.return_value = accumulated_today
 
         main()
 
         influx_mock.get_all_stats_group_by_week.assert_has_calls([call(today), call(previous_week)])
         get_report_by_ccaa_mock.assert_called_once_with(get_date_header_mock.return_value, today_data,
-                                                        previous_week_data, accumulated_today,
-                                                        accumulated_two_weeks_ago)
+                                                        previous_week_data, accumulated_today)
         get_date_header_mock.assert_called_once_with(today)
 
-        influx_mock.get_all_stats_accumulated_until_day.assert_has_calls([call(today), call(today - timedelta(14))])
+        influx_mock.get_all_stats_accumulated_until_day.assert_called_once_with(today)
         get_global_report_mock.assert_called_once_with(get_date_header_mock.return_value, today_data,
-                                                       previous_week_data, accumulated_today, accumulated_two_weeks_ago)
+                                                       previous_week_data, accumulated_today)
 
         twitter_mock.publish_tweet_with_media.assert_called_once_with(get_global_report_mock.return_value,
                                                                       get_graph_url_mock.return_value)

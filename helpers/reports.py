@@ -1,30 +1,28 @@
+import os
+import locale
 from collections import defaultdict
-from helpers.spain_geography import get_impact_string
 from helpers.db import Measurement
 from constants import GRAPH_IMAGE_PATH
-import os
+
+locale.setlocale(locale.LC_ALL, 'es_ES')
 
 
-def get_report_by_ccaa(date_in_header, ccaas_today, ccaas_yesterday, ccaas_accumulated_today,
-                       ccaas_accumulated_two_weeks_ago):
+def get_report_by_ccaa(date_in_header, ccaas_today, ccaas_yesterday, ccaas_accumulated_today):
     tweets = []
     for ccaa in sorted(ccaas_today.keys()):
         tweets.append(get_territorial_unit_report(ccaa, date_in_header, ccaas_today[ccaa],
-                                                  ccaas_yesterday[ccaa], ccaas_accumulated_today[ccaa],
-                                                  ccaas_accumulated_two_weeks_ago[ccaa]))
+                                                  ccaas_yesterday[ccaa], ccaas_accumulated_today[ccaa]))
 
     return tweets
 
 
-def get_global_report(date_in_header, ccaas_today, ccaas_yesterday, ccaas_accumulated_today,
-                      ccaas_accumulated_two_weeks_ago):
+def get_global_report(date_in_header, ccaas_today, ccaas_yesterday, ccaas_accumulated_today):
     global_today_data = get_global_data(ccaas_today)
     global_yesterday_data = get_global_data(ccaas_yesterday)
     global_accumulated_data = get_global_data(ccaas_accumulated_today)
-    global_two_weeks_ago_data = get_global_data(ccaas_accumulated_two_weeks_ago)
 
     return get_territorial_unit_report("🇪🇸 España", date_in_header, global_today_data, global_yesterday_data,
-                                       global_accumulated_data, global_two_weeks_ago_data)
+                                       global_accumulated_data)
 
 
 def get_global_data(dict_to_unpack):
@@ -33,13 +31,12 @@ def get_global_data(dict_to_unpack):
     result = defaultdict(lambda: 0)
     for key in keys:
         for ccaa in dict_to_unpack:
-            result[key] += dict_to_unpack[ccaa][key]
+            result[key] += dict_to_unpack[ccaa][key] if dict_to_unpack[ccaa][key] else 0
 
     return result
 
 
-def get_territorial_unit_report(territorial_unit, header_date, today_data, yesterday_data, accumulated_today,
-                                accumulated_two_weeks_ago):
+def get_territorial_unit_report(territorial_unit, header_date, today_data, yesterday_data, accumulated_today):
 
     sentences = list()
     sentences.append(f"{territorial_unit} - {header_date}:")
@@ -52,9 +49,9 @@ def get_territorial_unit_report(territorial_unit, header_date, today_data, yeste
         sentences.append(get_report_sentence("💉 PCRs 24h", today_data.get(Measurement.PCRS_LAST_24H),
                                              yesterday_data.get(Measurement.PCRS_LAST_24H)))
 
-    sentences.append(get_accumulated_impact_sentence("💥 IA 14 días", territorial_unit,
-                                                     accumulated_today.get(Measurement.PCRS),
-                                                     accumulated_two_weeks_ago.get(Measurement.PCRS)))
+    sentences.append(get_accumulated_impact_sentence("💥 IA 14 días",
+                                                     today_data.get(Measurement.ACCUMULATED_INCIDENCE),
+                                                     yesterday_data.get(Measurement.ACCUMULATED_INCIDENCE)))
     sentences.append("")
     sentences.append(get_report_sentence("😢 Muertes", today_data.get(Measurement.DEATHS),
                                          yesterday_data.get(Measurement.DEATHS),
@@ -68,8 +65,9 @@ def get_territorial_unit_report(territorial_unit, header_date, today_data, yeste
     return "\n".join(sentences)
 
 
-def get_accumulated_impact_sentence(stat, territorial_unit, today_data, two_weeks_ago_data):
-    return "{0}: {1}".format(stat, get_impact_string(today_data - two_weeks_ago_data, territorial_unit))
+def get_accumulated_impact_sentence(stat, today_total, yesterday_total):
+    formatted_number = locale.format_string('%.2f', today_total, grouping=True, monetary=True)
+    return "{0}: {1}/100.000 hab. {2}".format(stat, formatted_number, get_tendency_emoji(today_total, yesterday_total))
 
 
 def get_report_sentence(stat, today_total, yesterday_total, accumulated=None):
@@ -82,16 +80,20 @@ def get_report_sentence(stat, today_total, yesterday_total, accumulated=None):
 
 
 def get_tendency_emoji(today_number, yesterday_number):
+
+    def formatter(x):
+        return locale.format_string("%.6g", round(x, 2), grouping=True, monetary=True)
+
     if yesterday_number is None:
         result = ""
     elif today_number > yesterday_number:
-        result = '🔺{0:,}'.format(today_number - yesterday_number)
+        result = f'🔺{formatter(today_number - yesterday_number)}'
     elif yesterday_number > today_number:
-        result = '🔻{0:,}'.format(yesterday_number - today_number)
+        result = f'🔻{formatter(yesterday_number - today_number)}'
     else:
         result = '🔙'
 
-    return result.replace(",", ".")
+    return result
 
 
 def get_graph_url(start=None, end=None, additional_vars=None):
