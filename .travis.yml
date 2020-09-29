@@ -15,3 +15,5 @@ addons:
       - language-pack-es
 env:
   - LC_ALL=C
+before_script:
+  - locale -a
