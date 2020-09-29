@@ -38,27 +38,32 @@ def get_global_data(dict_to_unpack):
     return result
 
 
-def get_territorial_unit_report(territorial_unit, date_in_header, today_data, yesterday_data, accumulated_data,
-                                two_weeks_ago_data):
+def get_territorial_unit_report(territorial_unit, header_date, today_data, yesterday_data, accumulated_today,
+                                accumulated_two_weeks_ago):
 
-    sentences = [f"{territorial_unit} - {date_in_header}:",
-                 "",
-                 get_report_sentence("💉 PCRs", today_data.get(Measurement.PCRS), yesterday_data.get(Measurement.PCRS),
-                                     accumulated_data.get(Measurement.PCRS)),
-                 get_report_sentence("💉 PCRs 24h", today_data.get(Measurement.PCRS_LAST_24H),
-                                     yesterday_data.get(Measurement.PCRS_LAST_24H)),
-                 get_accumulated_impact_sentence("💥 IA 14 días", territorial_unit, accumulated_data.get(Measurement.PCRS),
-                                                 two_weeks_ago_data.get(Measurement.PCRS)),
-                 "",
-                 get_report_sentence("😢 Muertes", today_data.get(Measurement.DEATHS),
-                                     yesterday_data.get(Measurement.DEATHS), accumulated_data.get(Measurement.DEATHS)),
-                 "",
-                 # FIXME!! Be aware! Data seems to be inconsistent
-                 get_report_sentence("🚑 Hospitalizados", today_data.get(Measurement.ADMITTED_PEOPLE),
-                                     yesterday_data.get(Measurement.ADMITTED_PEOPLE)),
-                 get_report_sentence("🏥 UCI", today_data.get(Measurement.ICU_PEOPLE),
-                                     yesterday_data.get(Measurement.ICU_PEOPLE))
-                 ]
+    sentences = list()
+    sentences.append(f"{territorial_unit} - {header_date}:")
+    sentences.append("")
+    sentences.append(get_report_sentence("💉 PCRs", today_data.get(Measurement.PCRS),
+                                         yesterday_data.get(Measurement.PCRS),
+                                         accumulated_today.get(Measurement.PCRS)))
+
+    if Measurement.PCRS_LAST_24H in today_data:
+        sentences.append(get_report_sentence("💉 PCRs 24h", today_data.get(Measurement.PCRS_LAST_24H),
+                                             yesterday_data.get(Measurement.PCRS_LAST_24H)))
+
+    sentences.append(get_accumulated_impact_sentence("💥 IA 14 días", territorial_unit,
+                                                     accumulated_today.get(Measurement.PCRS),
+                                                     accumulated_two_weeks_ago.get(Measurement.PCRS)))
+    sentences.append("")
+    sentences.append(get_report_sentence("😢 Muertes", today_data.get(Measurement.DEATHS),
+                                         yesterday_data.get(Measurement.DEATHS),
+                                         accumulated_today.get(Measurement.DEATHS)))
+    sentences.append("")
+    sentences.append(get_report_sentence("🚑 Hospitalizados", today_data.get(Measurement.ADMITTED_PEOPLE),
+                                         yesterday_data.get(Measurement.ADMITTED_PEOPLE)))
+    sentences.append(get_report_sentence("🏥 UCI", today_data.get(Measurement.ICU_PEOPLE),
+                                         yesterday_data.get(Measurement.ICU_PEOPLE)))
 
     return "\n".join(sentences)
 

@@ -1,7 +1,7 @@
 import logging
 import sys
 from datetime import timedelta, datetime
-from helpers.db import Influx
+from helpers.db import Influx, Measurement
 from helpers.twitter import Twitter
 from helpers.reports import get_report_by_ccaa, get_global_report, get_graph_url
 
@@ -12,18 +12,30 @@ twitter = Twitter()
 def main():
     date = datetime.now()
 
-    today_data = influx.get_all_stats_group_by_week(date)
-    yesterday_data = influx.get_all_stats_group_by_week(date - timedelta(7))
-    accumulated_data = influx.get_all_stats_accumulated_until_day(date)
+    today_data = delete_pcrs24h(influx.get_all_stats_group_by_week(date))
+    last_week_data = delete_pcrs24h(influx.get_all_stats_group_by_week(date - timedelta(7)))
+    accumulated_today = delete_pcrs24h(influx.get_all_stats_accumulated_until_day(date))
+    accumulated_two_weeks_ago = delete_pcrs24h(influx.get_all_stats_accumulated_until_day(date - timedelta(14)))
     date_header = get_date_header(date)
 
-    spain_report = get_global_report(date_header, today_data, yesterday_data, accumulated_data)
+    spain_report = get_global_report(date_header, today_data, last_week_data, accumulated_today,
+                                     accumulated_two_weeks_ago)
     graph_url = get_graph_url(additional_vars={"group_by": "1w,4d"})
     last_id = twitter.publish_tweet_with_media(spain_report, graph_url)
 
-    tweets = get_report_by_ccaa(date_header, today_data, yesterday_data, accumulated_data)
+    tweets = get_report_by_ccaa(date_header, today_data, last_week_data, accumulated_today,
+                                accumulated_two_weeks_ago)
     last_id = twitter.publish_tweets(tweets, last_id)
     twitter.publish_tweet(get_final_tweet(), last_id)
+
+
+def delete_pcrs24h(element):
+    element_copy = dict(element)
+    for ccaa in element_copy:
+        if Measurement.PCRS_LAST_24H in element_copy[ccaa]:
+            del element_copy[ccaa][Measurement.PCRS_LAST_24H]
+
+    return element_copy
 
 
 def get_date_header(date):

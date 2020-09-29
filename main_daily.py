@@ -90,15 +90,16 @@ def publish_report(today, yesterday):
 
     today_data = influx.get_all_stats_group_by_day(today)
     yesterday_data = influx.get_all_stats_group_by_day(yesterday)
-    two_weeks_ago_data = influx.get_all_stats_accumulated_until_day(today - timedelta(14))
-    accumulated_data = influx.get_all_stats_accumulated_until_day(today)
+    accumulated_two_weeks_ago = influx.get_all_stats_accumulated_until_day(today - timedelta(14))
+    accumulated_today = influx.get_all_stats_accumulated_until_day(today)
     date_header = get_date_header(today)
 
-    spain_report = get_global_report(date_header, today_data, yesterday_data, accumulated_data, two_weeks_ago_data)
+    spain_report = get_global_report(date_header, today_data, yesterday_data, accumulated_today,
+                                     accumulated_two_weeks_ago)
     graph_url = get_graph_url(today - timedelta(31), today)
     last_id = twitter.publish_tweet_with_media(spain_report, graph_url)
 
-    tweets = get_report_by_ccaa(date_header, today_data, yesterday_data, accumulated_data, two_weeks_ago_data)
+    tweets = get_report_by_ccaa(date_header, today_data, yesterday_data, accumulated_today, accumulated_two_weeks_ago)
     last_id = twitter.publish_tweets(tweets, last_id)
     twitter.publish_tweet(get_final_tweet(), last_id)
 
