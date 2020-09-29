@@ -4,8 +4,6 @@ from collections import defaultdict
 from helpers.db import Measurement
 from constants import GRAPH_IMAGE_PATH
 
-locale.setlocale(locale.LC_ALL, os.environ.get('CUSTOM_LOCALE', 'es_ES'))
-
 
 def get_report_by_ccaa(date_in_header, ccaas_today, ccaas_yesterday, ccaas_accumulated_today):
     tweets = []
@@ -66,7 +64,7 @@ def get_territorial_unit_report(territorial_unit, header_date, today_data, yeste
 
 
 def get_accumulated_impact_sentence(stat, today_total, yesterday_total):
-    formatted_number = locale.format_string('%.2f', today_total, grouping=True, monetary=True)
+    formatted_number = _format_number(today_total)
     return "{0}: {1}/100.000 hab. {2}".format(stat, formatted_number, get_tendency_emoji(today_total, yesterday_total))
 
 
@@ -81,15 +79,12 @@ def get_report_sentence(stat, today_total, yesterday_total, accumulated=None):
 
 def get_tendency_emoji(today_number, yesterday_number):
 
-    def formatter(x):
-        return locale.format_string("%.6g", round(x, 2), grouping=True, monetary=True)
-
     if yesterday_number is None:
         result = ""
     elif today_number > yesterday_number:
-        result = f'🔺{formatter(today_number - yesterday_number)}'
+        result = f'🔺{_format_number(today_number - yesterday_number)}'
     elif yesterday_number > today_number:
-        result = f'🔻{formatter(yesterday_number - today_number)}'
+        result = f'🔻{_format_number(yesterday_number - today_number)}'
     else:
         result = '🔙'
 
@@ -104,3 +99,6 @@ def get_graph_url(start=None, end=None, additional_vars=None):
 
     return os.path.join(grafana_server, GRAPH_IMAGE_PATH) + start_str + end_str + vars_str
 
+
+def _format_number(number):
+    return "{0:,}".format(round(number, 2)).replace(",", "#").replace(".", ",").replace("#", ".")
