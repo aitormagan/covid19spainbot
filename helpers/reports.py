@@ -4,7 +4,7 @@ from collections import defaultdict
 from helpers.db import Measurement
 from constants import GRAPH_IMAGE_PATH
 
-locale.setlocale(locale.LC_ALL, 'es_ES')
+locale.setlocale(locale.LC_ALL, os.environ.get('CUSTOM_LOCALE', 'es_ES'))
 
 
 def get_report_by_ccaa(date_in_header, ccaas_today, ccaas_yesterday, ccaas_accumulated_today):
