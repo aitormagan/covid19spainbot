@@ -13,3 +13,5 @@ addons:
   apt:
     packages:
       - language-pack-es
+env:
+  - LC_ALL=C
