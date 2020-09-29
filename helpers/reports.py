@@ -1,26 +1,30 @@
 from collections import defaultdict
-from helpers.spain_geography import get_impact_string
+from helpers.spain_geography import get_accumulated_impact_string
 from helpers.db import Measurement
 from constants import GRAPH_IMAGE_PATH
 import os
 
 
-def get_report_by_ccaa(date_in_header, ccaas_today_data, ccaas_yesterday_data, ccaas_accumulated_data):
+def get_report_by_ccaa(date_in_header, ccaas_today, ccaas_yesterday, ccaas_accumulated_today,
+                       ccaas_accumulated_two_weeks_ago):
     tweets = []
-    for ccaa in sorted(ccaas_today_data.keys()):
-        tweets.append(get_territorial_unit_report(ccaa, date_in_header, ccaas_today_data[ccaa],
-                                                  ccaas_yesterday_data[ccaa], ccaas_accumulated_data[ccaa]))
+    for ccaa in sorted(ccaas_today.keys()):
+        tweets.append(get_territorial_unit_report(ccaa, date_in_header, ccaas_today[ccaa],
+                                                  ccaas_yesterday[ccaa], ccaas_accumulated_today[ccaa],
+                                                  ccaas_accumulated_two_weeks_ago[ccaa]))
 
     return tweets
 
 
-def get_global_report(date_in_header, ccaas_today_data, ccaas_yesterday_data, ccaas_accumulated_data):
-    global_today_data = get_global_data(ccaas_today_data)
-    global_yesterday_data = get_global_data(ccaas_yesterday_data)
-    global_accumulated_data = get_global_data(ccaas_accumulated_data)
+def get_global_report(date_in_header, ccaas_today, ccaas_yesterday, ccaas_accumulated_today,
+                      ccaas_accumulated_two_weeks_ago):
+    global_today_data = get_global_data(ccaas_today)
+    global_yesterday_data = get_global_data(ccaas_yesterday)
+    global_accumulated_data = get_global_data(ccaas_accumulated_today)
+    global_two_weeks_ago_data = get_global_data(ccaas_accumulated_two_weeks_ago)
 
     return get_territorial_unit_report("🇪🇸 España", date_in_header, global_today_data, global_yesterday_data,
-                                       global_accumulated_data)
+                                       global_accumulated_data, global_two_weeks_ago_data)
 
 
 def get_global_data(dict_to_unpack):
@@ -34,32 +38,40 @@ def get_global_data(dict_to_unpack):
     return result
 
 
-def get_territorial_unit_report(territorial_unit, date_in_header, today_data, yesterday_data, accumulated_data):
+def get_territorial_unit_report(territorial_unit, date_in_header, today_data, yesterday_data, accumulated_data,
+                                two_weeks_ago_data):
+
     sentences = [f"{territorial_unit} - {date_in_header}:",
                  "",
-                 get_report_sentence("💉 PCRs", territorial_unit, today_data.get(Measurement.PCRS),
-                                     yesterday_data.get(Measurement.PCRS), accumulated_data.get(Measurement.PCRS)),
-                 get_report_sentence("💉 PCRs 24h", territorial_unit, today_data.get(Measurement.PCRS_LAST_24H),
+                 get_report_sentence("💉 PCRs", today_data.get(Measurement.PCRS), yesterday_data.get(Measurement.PCRS),
+                                     accumulated_data.get(Measurement.PCRS)),
+                 get_report_sentence("💉 PCRs 24h", today_data.get(Measurement.PCRS_LAST_24H),
                                      yesterday_data.get(Measurement.PCRS_LAST_24H)),
-                 get_report_sentence("😢 Muertes", territorial_unit, today_data.get(Measurement.DEATHS),
+                 get_accumulated_impact_sentence("💥 IA 14 días", territorial_unit, accumulated_data.get(Measurement.PCRS),
+                                                 two_weeks_ago_data.get(Measurement.PCRS)),
+                 "",
+                 get_report_sentence("😢 Muertes", today_data.get(Measurement.DEATHS),
                                      yesterday_data.get(Measurement.DEATHS), accumulated_data.get(Measurement.DEATHS)),
                  "",
                  # FIXME!! Be aware! Data seems to be inconsistent
-                 get_report_sentence("🚑 Hospitalizados", territorial_unit, today_data.get(Measurement.ADMITTED_PEOPLE),
+                 get_report_sentence("🚑 Hospitalizados", today_data.get(Measurement.ADMITTED_PEOPLE),
                                      yesterday_data.get(Measurement.ADMITTED_PEOPLE)),
-                 get_report_sentence("🏥 UCI", territorial_unit, today_data.get(Measurement.ICU_PEOPLE),
+                 get_report_sentence("🏥 UCI", today_data.get(Measurement.ICU_PEOPLE),
                                      yesterday_data.get(Measurement.ICU_PEOPLE))
                  ]
 
     return "\n".join(sentences)
 
 
-def get_report_sentence(stat, territorial_unit, today_total, yesterday_total, accumulated=None):
+def get_accumulated_impact_sentence(stat, territorial_unit, today_data, two_weeks_ago_data):
+    return "{0}: {1}".format(stat, get_accumulated_impact_string(today_data - two_weeks_ago_data, territorial_unit))
+
+
+def get_report_sentence(stat, today_total, yesterday_total, accumulated=None):
     total_sentence = "(Totales: {0:,})".format(accumulated).replace(",", ".") if accumulated else ""
-    sentence = "{0}: {1} {2} {3} {4}".format(stat, "{0:+,}".format(today_total).replace(",", "."),
-                                             get_impact_string(today_total, territorial_unit),
-                                             get_tendency_emoji(today_total, yesterday_total),
-                                             total_sentence).strip()
+    sentence = "{0}: {1} {2} {3}".format(stat, "{0:+,}".format(today_total).replace(",", "."),
+                                         get_tendency_emoji(today_total, yesterday_total),
+                                         total_sentence).strip()
 
     return " ".join(sentence.split())
 
