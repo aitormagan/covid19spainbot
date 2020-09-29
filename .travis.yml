@@ -9,3 +9,7 @@ after_success: coveralls
 branches:
   only:
     - master
+addons:
+  apt:
+    packages:
+      - language-pack-es
