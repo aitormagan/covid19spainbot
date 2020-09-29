@@ -120,7 +120,8 @@ class MainDailyUnitTest(unittest.TestCase):
         pcrs_pdf = MagicMock()
         accumulated_pcrs = MagicMock()
         last_24h_pcrs = MagicMock()
-        pcrs_pdf.get_column_data.side_effect = [Exception(), accumulated_pcrs, last_24h_pcrs]
+        accumulated_incidence = MagicMock()
+        pcrs_pdf.get_column_data.side_effect = [Exception(), accumulated_pcrs, last_24h_pcrs, accumulated_incidence]
         deaths_pdf = MagicMock()
         accumulated_admitted = MagicMock()
         accumulated_icu = MagicMock()
@@ -143,7 +144,7 @@ class MainDailyUnitTest(unittest.TestCase):
 
         ministry_report_mock.assert_has_calls([call(today, 1), call(today, 2),
                                                call(today, 1,  (239, 56, 239 + 283, 56 + 756))])
-        pcrs_pdf.get_column_data.assert_has_calls([call(1), call(2)])
+        pcrs_pdf.get_column_data.assert_has_calls([call(1), call(2), call(3, 1, float)])
         deaths_pdf.get_column_data.assert_has_calls([call(1), call(2), call(3)])
 
         update_stat_mock.assert_has_calls([call(Measurement.PCRS, accumulated_pcrs, today),
@@ -151,7 +152,9 @@ class MainDailyUnitTest(unittest.TestCase):
                                           call(Measurement.ADMITTED_PEOPLE, accumulated_admitted, today),
                                           call(Measurement.ICU_PEOPLE, accumulated_icu, today)])
 
-        influx_mock.insert_stats.assert_called_once_with(Measurement.PCRS_LAST_24H, today, last_24h_pcrs)
+        influx_mock.insert_stats.assert_has_calls([call(Measurement.PCRS_LAST_24H, today, last_24h_pcrs),
+                                                   call(Measurement.ACCUMULATED_INCIDENCE, today,
+                                                        accumulated_incidence)])
 
     @patch("main_daily.SpainCovid19MinistryReport")
     @patch("main_daily.influx")
@@ -164,7 +167,8 @@ class MainDailyUnitTest(unittest.TestCase):
         pcrs_pdf = MagicMock()
         accumulated_pcrs = MagicMock()
         last_24h_pcrs = MagicMock()
-        pcrs_pdf.get_column_data.side_effect = [accumulated_pcrs, last_24h_pcrs]
+        accumulated_incidence = MagicMock()
+        pcrs_pdf.get_column_data.side_effect = [accumulated_pcrs, last_24h_pcrs, accumulated_incidence]
         deaths_pdf = MagicMock()
         accumulated_admitted = MagicMock()
         accumulated_icu = MagicMock()
@@ -186,7 +190,7 @@ class MainDailyUnitTest(unittest.TestCase):
         update_database(today)
 
         ministry_report_mock.assert_has_calls([call(today, 1), call(today, 2)])
-        pcrs_pdf.get_column_data.assert_has_calls([call(1), call(2)])
+        pcrs_pdf.get_column_data.assert_has_calls([call(1), call(2), call(3, 1, float)])
         deaths_pdf.get_column_data.assert_has_calls([call(1), call(2), call(3)])
 
         update_stat_mock.assert_has_calls([call(Measurement.PCRS, accumulated_pcrs, today),
@@ -194,7 +198,9 @@ class MainDailyUnitTest(unittest.TestCase):
                                           call(Measurement.ADMITTED_PEOPLE, accumulated_admitted, today),
                                           call(Measurement.ICU_PEOPLE, accumulated_icu, today)])
 
-        influx_mock.insert_stats.assert_called_once_with(Measurement.PCRS_LAST_24H, today, last_24h_pcrs)
+        influx_mock.insert_stats.assert_has_calls([call(Measurement.PCRS_LAST_24H, today, last_24h_pcrs),
+                                                   call(Measurement.ACCUMULATED_INCIDENCE, today,
+                                                        accumulated_incidence)])
 
     @patch("main_daily.influx")
     @patch("main_daily.get_today_numbers")
@@ -240,22 +246,22 @@ class MainDailyUnitTest(unittest.TestCase):
 
         today_data = MagicMock()
         yesterday_data = MagicMock()
-        accumulated_data = MagicMock()
+        accumulated_today = MagicMock()
 
         influx_mock.get_all_stats_group_by_day.side_effect = [today_data, yesterday_data]
 
-        influx_mock.get_all_stats_accumulated_until_day.return_value = accumulated_data
+        influx_mock.get_all_stats_accumulated_until_day.return_value = accumulated_today
 
         publish_report(today, yesterday)
 
         influx_mock.get_all_stats_group_by_day.assert_has_calls([call(today), call(yesterday)])
         get_report_by_ccaa_mock.assert_called_once_with(get_date_header_mock.return_value, today_data, yesterday_data,
-                                                        accumulated_data)
+                                                        accumulated_today)
         get_date_header_mock.assert_called_once_with(today)
 
         influx_mock.get_all_stats_accumulated_until_day.assert_called_once_with(today)
         get_global_report_mock.assert_called_once_with(get_date_header_mock.return_value, today_data, yesterday_data,
-                                                       accumulated_data)
+                                                       accumulated_today)
 
         twitter_mock.publish_tweet_with_media.assert_called_once_with(get_global_report_mock.return_value,
                                                                       get_graph_url_mock.return_value)

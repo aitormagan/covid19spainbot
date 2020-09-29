@@ -105,7 +105,8 @@ class InfluxUnitTest(unittest.TestCase):
                                                        call(Measurement.DEATHS, date),
                                                        call(Measurement.PCRS_LAST_24H, date),
                                                        call(Measurement.ADMITTED_PEOPLE, date),
-                                                       call(Measurement.ICU_PEOPLE, date)])
+                                                       call(Measurement.ICU_PEOPLE, date),
+                                                       call(Measurement.ACCUMULATED_INCIDENCE, date)])
 
     def test_when_get_all_stats_group_by_week_then_three_value_returned(self):
         influx = Influx()
@@ -121,7 +122,8 @@ class InfluxUnitTest(unittest.TestCase):
                                                         call(Measurement.DEATHS, date),
                                                         call(Measurement.PCRS_LAST_24H, date),
                                                         call(Measurement.ADMITTED_PEOPLE, date),
-                                                        call(Measurement.ICU_PEOPLE, date)])
+                                                        call(Measurement.ICU_PEOPLE, date),
+                                                        call(Measurement.ACCUMULATED_INCIDENCE, date)])
 
     def test_when_get_all_stats_accumulated_until_day_then_two_value_returned(self):
         influx = Influx()
