@@ -11,7 +11,7 @@ class SpainGeographyUnitTest(unittest.TestCase):
         self.assertEqual("", get_impact_string(0, "Madrid"))
 
     def test_given_ccaa_and_positive_when_get_impact_string_then_impact_returned(self):
-        self.assertEqual("(0,15/millón)", get_impact_string(1, "Madrid"))
+        self.assertEqual("0,15/100.000 hab.", get_impact_string(10, "Madrid"))
 
     def test_given_no_ccaa_and_positive_when_get_impact_string_then_spain_impact_returned(self):
-        self.assertEqual("(0,02/millón)", get_impact_string(1))
+        self.assertEqual("0,02/100.000 hab.", get_impact_string(10))

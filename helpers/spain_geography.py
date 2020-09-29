@@ -21,7 +21,7 @@ CCAA_POPULATION = {
 }
 
 
-def get_accumulated_impact_string(total_cases, ccaa=None):
+def get_impact_string(total_cases, ccaa=None):
     divider = CCAA_POPULATION[ccaa] if ccaa and ccaa in CCAA_POPULATION else sum(CCAA_POPULATION.values())
     ccaa_impact = total_cases * 100000 / divider
     return "{0:.2f}".format(ccaa_impact).replace(".", ",") + "/100.000 hab." if total_cases > 0 else ""

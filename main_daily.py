@@ -90,8 +90,8 @@ def publish_report(today, yesterday):
 
     today_data = influx.get_all_stats_group_by_day(today)
     yesterday_data = influx.get_all_stats_group_by_day(yesterday)
-    accumulated_two_weeks_ago = influx.get_all_stats_accumulated_until_day(today - timedelta(14))
     accumulated_today = influx.get_all_stats_accumulated_until_day(today)
+    accumulated_two_weeks_ago = influx.get_all_stats_accumulated_until_day(today - timedelta(14))
     date_header = get_date_header(today)
 
     spain_report = get_global_report(date_header, today_data, yesterday_data, accumulated_today,

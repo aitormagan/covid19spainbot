@@ -1,5 +1,5 @@
 from collections import defaultdict
-from helpers.spain_geography import get_accumulated_impact_string
+from helpers.spain_geography import get_impact_string
 from helpers.db import Measurement
 from constants import GRAPH_IMAGE_PATH
 import os
@@ -69,7 +69,7 @@ def get_territorial_unit_report(territorial_unit, header_date, today_data, yeste
 
 
 def get_accumulated_impact_sentence(stat, territorial_unit, today_data, two_weeks_ago_data):
-    return "{0}: {1}".format(stat, get_accumulated_impact_string(today_data - two_weeks_ago_data, territorial_unit))
+    return "{0}: {1}".format(stat, get_impact_string(today_data - two_weeks_ago_data, territorial_unit))
 
 
 def get_report_sentence(stat, today_total, yesterday_total, accumulated=None):
