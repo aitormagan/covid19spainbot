@@ -1,8 +1,8 @@
 import os
-import locale
 from collections import defaultdict
 from helpers.db import Measurement
 from constants import GRAPH_IMAGE_PATH
+from helpers.spain_geography import CCAA_POPULATION
 
 
 def get_report_by_ccaa(date_in_header, ccaas_today, ccaas_yesterday, ccaas_accumulated_today):
@@ -25,13 +25,26 @@ def get_global_report(date_in_header, ccaas_today, ccaas_yesterday, ccaas_accumu
 
 def get_global_data(dict_to_unpack):
     keys = set([key for ccaa in dict_to_unpack for key in dict_to_unpack[ccaa].keys()])
+    ia_exists = Measurement.ACCUMULATED_INCIDENCE in keys
+    keys.discard(Measurement.ACCUMULATED_INCIDENCE)
 
     result = defaultdict(lambda: 0)
     for key in keys:
         for ccaa in dict_to_unpack:
             result[key] += dict_to_unpack[ccaa][key] if dict_to_unpack[ccaa][key] else 0
 
+    if ia_exists:
+        result[Measurement.ACCUMULATED_INCIDENCE] = calculate_global_incidence(dict_to_unpack)
+
     return result
+
+
+def calculate_global_incidence(dict_to_unpack):
+    total_cases = 0
+    for ccaa in dict_to_unpack:
+        total_cases += dict_to_unpack[ccaa][Measurement.ACCUMULATED_INCIDENCE] * CCAA_POPULATION[ccaa] / 100000
+
+    return total_cases / sum(CCAA_POPULATION.values()) * 100000
 
 
 def get_territorial_unit_report(territorial_unit, header_date, today_data, yesterday_data, accumulated_today):
