@@ -41,10 +41,12 @@ def get_global_data(dict_to_unpack):
 
 def calculate_global_incidence(dict_to_unpack):
     total_cases = 0
+    population = 0
     for ccaa in dict_to_unpack:
         total_cases += dict_to_unpack[ccaa][Measurement.ACCUMULATED_INCIDENCE] * CCAA_POPULATION[ccaa] / 100000
+        population += CCAA_POPULATION[ccaa]
 
-    return total_cases / sum(CCAA_POPULATION.values()) * 100000
+    return total_cases / population * 100000 if population else 0
 
 
 def get_territorial_unit_report(territorial_unit, header_date, today_data, yesterday_data, accumulated_today):
