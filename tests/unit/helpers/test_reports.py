@@ -2,8 +2,10 @@ from datetime import datetime
 import unittest
 from unittest.mock import patch, call, MagicMock
 from helpers.reports import get_tendency_emoji, get_report_sentence, get_report_by_ccaa, get_graph_url, \
-    get_global_report, get_global_data, get_territorial_unit_report, get_accumulated_impact_sentence
+    get_global_report, get_global_data, get_territorial_unit_report, get_accumulated_impact_sentence, \
+    calculate_global_incidence
 from helpers.db import Measurement
+from helpers.spain_geography import CCAA_POPULATION
 from constants import GRAPH_IMAGE_PATH
 
 DEFAULT_GRAPH_IMAGE_URL = "http://localhost:3000/" + GRAPH_IMAGE_PATH
@@ -78,7 +80,8 @@ class ReportsUnitTest(unittest.TestCase):
     def test_given_no_data_when_global_data_then_empty_dict_returned(self):
         self.assertEqual({}, get_global_data({}))
 
-    def test_given_data_for_one_ccaa_when_global_data_then_ccaa_data_returned(self):
+    @patch("helpers.reports.calculate_global_incidence")
+    def test_given_data_for_one_ccaa_when_global_data_then_ccaa_data_returned(self, calculate_global_incidence_mock):
         ccaa = "Melilla"
         pcrs = 100
         deaths = 4
@@ -94,7 +97,10 @@ class ReportsUnitTest(unittest.TestCase):
             Measurement.DEATHS: deaths
         }, get_global_data(data))
 
-    def test_given_data_for_two_ccaa_when_global_data_then_sum_values_returned(self):
+        calculate_global_incidence_mock.assert_not_called()
+
+    @patch("helpers.reports.calculate_global_incidence")
+    def test_given_data_for_two_ccaa_when_global_data_then_sum_values_returned(self, calculate_global_incidence_mock):
         ccaa1 = "Melilla"
         pcrs1 = 100
         deaths1 = 4
@@ -116,6 +122,79 @@ class ReportsUnitTest(unittest.TestCase):
             Measurement.PCRS: pcrs1 + pcrs2,
             Measurement.DEATHS: deaths1 + deaths2
         }, get_global_data(data))
+
+        calculate_global_incidence_mock.assert_not_called()
+
+    @patch("helpers.reports.calculate_global_incidence")
+    def test_given_accumulated_incidence_when_global_data_then_calculate_global_incidence_returned(self,
+                                                                                                   calculate_global_incidence_mock):
+        ccaa1 = "Melilla"
+        pcrs1 = 100
+        deaths1 = 4
+        ccaa2 = "Andalucia"
+        pcrs2 = 400
+        deaths2 = 7
+        ia1 = 1.1
+        ia2 = 2.2
+        data = {
+            ccaa1: {
+                Measurement.PCRS: pcrs1,
+                Measurement.DEATHS: deaths1,
+                Measurement.ACCUMULATED_INCIDENCE: ia1
+            },
+            ccaa2: {
+                Measurement.PCRS: pcrs2,
+                Measurement.DEATHS: deaths2,
+                Measurement.ACCUMULATED_INCIDENCE: ia2
+            }
+        }
+
+        self.assertEqual({
+            Measurement.PCRS: pcrs1 + pcrs2,
+            Measurement.DEATHS: deaths1 + deaths2,
+            Measurement.ACCUMULATED_INCIDENCE: calculate_global_incidence_mock.return_value
+        }, get_global_data(data))
+
+        calculate_global_incidence_mock.assert_called_once_with(data)
+
+    def test_given_no_data_when_calculate_global_incidence_then_zero_returned(self):
+        self.assertEqual(0, calculate_global_incidence({}))
+
+    def test_given_only_one_ccaa_when_calculate_global_incidence_then_same_value_returned(self):
+        ia = 7
+
+        result = calculate_global_incidence({
+            "Castilla y León": {
+                Measurement.ACCUMULATED_INCIDENCE: ia
+            }
+        })
+
+        # Round because the operation is returning 6.999999
+        self.assertEqual(ia, round(result, 0))
+
+    def test_given_two_ccaas_when_calculate_global_incidence_then_same_value_returned(self):
+        ia1 = 7
+        ia2 = 6
+        ccaa1 = "Castilla y León"
+        ccaa2 = "Castilla La Mancha"
+
+        result = calculate_global_incidence({
+            ccaa1: {
+                Measurement.ACCUMULATED_INCIDENCE: ia1
+            },
+            ccaa2: {
+                Measurement.ACCUMULATED_INCIDENCE: ia2
+            }
+        })
+
+
+        population_ccaa1 = CCAA_POPULATION[ccaa1]
+        population_ccaa2 = CCAA_POPULATION[ccaa2]
+        total_cases = ia1 * population_ccaa1 / 100000 + ia2 * population_ccaa2 / 100000
+        total_population = population_ccaa1 + population_ccaa2
+        expected_result = total_cases / total_population * 100000
+
+        self.assertEqual(expected_result, result)
 
     @patch("helpers.reports.get_report_sentence")
     @patch("helpers.reports.get_accumulated_impact_sentence")
