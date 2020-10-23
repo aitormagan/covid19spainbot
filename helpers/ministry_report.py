@@ -19,7 +19,7 @@ class SpainCovid19MinistryReport:
         if self._data_frame is None:
             data_frames = tabula.read_pdf(self.PDF_URL_FORMAT.format(self.get_pdf_id_for_date(self._date)),
                                           pages=str(self._page), area=self._area)
-            self._data_frame = list(filter(lambda x: len(x) >= 22, data_frames))[0]
+            self._data_frame = list(filter(lambda x: len(x) >= 21, data_frames))[0]
 
             for column in self._data_frame:
                 self._data_frame[column.replace('*', '').strip()] = self._data_frame.pop(column)
@@ -37,12 +37,13 @@ class SpainCovid19MinistryReport:
         return 105 + (date - reference_date).days - weekends * 2
 
     def get_column_data(self, column, part=0, cast=int):
-        ccaas_column = self.data_frame['Unnamed: 0'].astype(str)
+        first_column = self.data_frame.columns[0]
+        ccaas_column = self.data_frame[first_column].astype(str)
         first_ccaa_position = ccaas_column.loc[ccaas_column.str.startswith('Andalucía', na=False)].index[0]
 
         cases = {}
         for i in range(first_ccaa_position, first_ccaa_position + 19):
-            ccaa = self.data_frame['Unnamed: 0'][i].replace('*', '')
+            ccaa = self.data_frame[first_column][i].replace('*', '')
             value = self.data_frame[self.data_frame.columns[column]][i].split(' ')[part].replace('.', '').replace('-', '0').replace(',', '.')
 
             cases[ccaa] = cast(value)
