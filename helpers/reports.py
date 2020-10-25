@@ -70,10 +70,10 @@ def get_territorial_unit_report(territorial_unit, header_date, today_data, yeste
                                          yesterday_data.get(Measurement.DEATHS),
                                          accumulated_today.get(Measurement.DEATHS)))
     sentences.append("")
-    # sentences.append(get_report_sentence("🚑 Hospitalizados", today_data.get(Measurement.ADMITTED_PEOPLE),
-    #                                      yesterday_data.get(Measurement.ADMITTED_PEOPLE)))
-    # sentences.append(get_report_sentence("🏥 UCI", today_data.get(Measurement.ICU_PEOPLE),
-    #                                      yesterday_data.get(Measurement.ICU_PEOPLE)))
+    sentences.append(get_report_sentence("🚑 Hospitalizados", today_data.get(Measurement.ADMITTED_PEOPLE),
+                                         yesterday_data.get(Measurement.ADMITTED_PEOPLE)))
+    sentences.append(get_report_sentence("🏥 UCI", today_data.get(Measurement.ICU_PEOPLE),
+                                         yesterday_data.get(Measurement.ICU_PEOPLE)))
 
     return "\n".join(sentences)
 

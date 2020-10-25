@@ -126,8 +126,10 @@ class MainDailyUnitTest(unittest.TestCase):
         accumulated_admitted = MagicMock()
         accumulated_icu = MagicMock()
         accumulated_deaths = MagicMock()
-        deaths_pdf.get_column_data.side_effect = [accumulated_admitted, accumulated_icu, accumulated_deaths]
-        ministry_report_mock.side_effect = [pcrs_pdf, deaths_pdf, pcrs_pdf]
+        hospitals_pdf = MagicMock()
+        deaths_pdf.get_column_data.side_effect = [accumulated_deaths]
+        hospitals_pdf.get_column_data.side_effect = [accumulated_admitted, accumulated_icu]
+        ministry_report_mock.side_effect = [pcrs_pdf, deaths_pdf, hospitals_pdf, pcrs_pdf]
 
         yesterday_pcrs_accumulated = MagicMock()
         yesterday_deaths_accumulated = MagicMock()
@@ -142,10 +144,13 @@ class MainDailyUnitTest(unittest.TestCase):
 
         update_database(today)
 
-        ministry_report_mock.assert_has_calls([call(today, 1), call(today, 2),
-                                               call(today, 1,  (239, 56, 239 + 283, 56 + 756))])
+        ministry_report_mock.assert_has_calls([call(today, 1),
+                                               call(today, 5, (142, 539, 142+343, 539+265)),
+                                               call(today, 3),
+                                               call(today, 1, (239, 56, 239 + 283, 56 + 756))])
         pcrs_pdf.get_column_data.assert_has_calls([call(1), call(2), call(3, 1, float)])
-        deaths_pdf.get_column_data.assert_has_calls([call(1), call(2), call(3)])
+        deaths_pdf.get_column_data.assert_has_calls([call(1)])
+        hospitals_pdf.get_column_data.assert_has_calls([call(1), call(2)])
 
         update_stat_mock.assert_has_calls([call(Measurement.PCRS, accumulated_pcrs, today),
                                           call(Measurement.DEATHS, accumulated_deaths, today),
@@ -173,8 +178,10 @@ class MainDailyUnitTest(unittest.TestCase):
         accumulated_admitted = MagicMock()
         accumulated_icu = MagicMock()
         accumulated_deaths = MagicMock()
-        deaths_pdf.get_column_data.side_effect = [accumulated_admitted, accumulated_icu, accumulated_deaths]
-        ministry_report_mock.side_effect = [pcrs_pdf, deaths_pdf]
+        hospitals_pdf = MagicMock()
+        deaths_pdf.get_column_data.side_effect = [accumulated_deaths]
+        hospitals_pdf.get_column_data.side_effect = [accumulated_admitted, accumulated_icu]
+        ministry_report_mock.side_effect = [pcrs_pdf, deaths_pdf, hospitals_pdf]
 
         yesterday_pcrs_accumulated = MagicMock()
         yesterday_deaths_accumulated = MagicMock()
@@ -189,9 +196,12 @@ class MainDailyUnitTest(unittest.TestCase):
 
         update_database(today)
 
-        ministry_report_mock.assert_has_calls([call(today, 1), call(today, 2)])
+        ministry_report_mock.assert_has_calls([call(today, 1),
+                                               call(today, 5, (142, 539, 142+343, 539+265)),
+                                               call(today, 3)])
         pcrs_pdf.get_column_data.assert_has_calls([call(1), call(2), call(3, 1, float)])
-        deaths_pdf.get_column_data.assert_has_calls([call(1), call(2), call(3)])
+        deaths_pdf.get_column_data.assert_has_calls([call(1)])
+        hospitals_pdf.get_column_data.assert_has_calls([call(1), call(2)])
 
         update_stat_mock.assert_has_calls([call(Measurement.PCRS, accumulated_pcrs, today),
                                           call(Measurement.DEATHS, accumulated_deaths, today),

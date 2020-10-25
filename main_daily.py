@@ -46,6 +46,7 @@ def subtract_days_ignoring_weekends(initial_date, days_to_substract):
 def update_database(today):
     pcrs_report = SpainCovid19MinistryReport(today, 1)
     deaths_report = SpainCovid19MinistryReport(today, 5, (142, 539, 142+343, 539+265))
+    hospital_repot = SpainCovid19MinistryReport(today, 3)
 
     try:
         accumulated_pcrs_today = pcrs_report.get_column_data(1)
@@ -55,14 +56,14 @@ def update_database(today):
         pcrs_report = SpainCovid19MinistryReport(today, 1, (239, 56, 239 + 283, 56 + 756))
         accumulated_pcrs_today = pcrs_report.get_column_data(1)
 
-    # accumulated_admitted_today = deaths_report.get_column_data(1)
-    # accumulated_icu_today = deaths_report.get_column_data(2)
+    accumulated_admitted_today = hospital_repot.get_column_data(1)
+    accumulated_icu_today = hospital_repot.get_column_data(2)
     accumulated_deaths_today = deaths_report.get_column_data(1)
 
     today_pcrs = update_stat(Measurement.PCRS, accumulated_pcrs_today, today)
     today_deaths = update_stat(Measurement.DEATHS, accumulated_deaths_today, today)
-    # today_admitted = update_stat(Measurement.ADMITTED_PEOPLE, accumulated_admitted_today, today)
-    # today_uci = update_stat(Measurement.ICU_PEOPLE, accumulated_icu_today, today)
+    today_admitted = update_stat(Measurement.ADMITTED_PEOPLE, accumulated_admitted_today, today)
+    today_uci = update_stat(Measurement.ICU_PEOPLE, accumulated_icu_today, today)
 
     today_pcrs_last_24h = pcrs_report.get_column_data(2)
     influx.insert_stats(Measurement.PCRS_LAST_24H, today, today_pcrs_last_24h)
@@ -70,7 +71,7 @@ def update_database(today):
     accumulated_incidence = pcrs_report.get_column_data(3, 1, float)
     influx.insert_stats(Measurement.ACCUMULATED_INCIDENCE, today, accumulated_incidence)
 
-    return today_pcrs, today_deaths, today_pcrs_last_24h
+    return today_pcrs, today_deaths, today_pcrs_last_24h, today_admitted, today_uci
 
 
 def update_stat(stat, accumulated_today, today):
