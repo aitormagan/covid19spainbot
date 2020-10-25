@@ -1,6 +1,6 @@
 # Covid 19 Spain Bot 
 
-[![Build Status](https://travis-ci.com/aitormagan/covid19spainbot.svg?branch=master)](https://travis-ci.com/aitormagan/covid19spainbot)
+[![Build Status](https://github.com/aitormagan/covid19spainbot/workflows/Python%20package/badge.svg)](https://github.com//aitormagan/covid19spainbot/actions)
 [![Coverage Status](https://coveralls.io/repos/github/aitormagan/covid19spainbot/badge.svg?branch=master)](https://coveralls.io/github/aitormagan/covid19spainbot?branch=master)
 
 Script que publica en Twitter los nuevos PCR+ y fallecimientos provocados por el SARS-CoV-2 en España y disgregado por
