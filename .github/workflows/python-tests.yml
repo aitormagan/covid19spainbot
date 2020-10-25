@@ -37,3 +37,7 @@ jobs:
     - name: Test with nosetests
       run: |
         nosetests --with-coverage --cover-xml --cover-inclusive --cover-package=helpers,main_daily,main_weekly
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
