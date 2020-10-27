@@ -127,8 +127,11 @@ class MainDailyUnitTest(unittest.TestCase):
         accumulated_icu = MagicMock()
         accumulated_deaths = MagicMock()
         hospitals_pdf = MagicMock()
+        percentage_admitted = MagicMock()
+        percentage_icu = MagicMock()
         deaths_pdf.get_column_data.side_effect = [accumulated_deaths]
-        hospitals_pdf.get_column_data.side_effect = [accumulated_admitted, accumulated_icu]
+        hospitals_pdf.get_column_data.side_effect = [accumulated_admitted, accumulated_icu,
+                                                     percentage_admitted, percentage_icu]
         ministry_report_mock.side_effect = [pcrs_pdf, deaths_pdf, hospitals_pdf, pcrs_pdf]
 
         yesterday_pcrs_accumulated = MagicMock()
@@ -159,7 +162,9 @@ class MainDailyUnitTest(unittest.TestCase):
 
         influx_mock.insert_stats.assert_has_calls([call(Measurement.PCRS_LAST_24H, today, last_24h_pcrs),
                                                    call(Measurement.ACCUMULATED_INCIDENCE, today,
-                                                        accumulated_incidence)])
+                                                        accumulated_incidence),
+                                                   call(Measurement.PERCENTAGE_ADMITTED, today, percentage_admitted),
+                                                   call(Measurement.PERCENTAGE_ICU, today, percentage_icu)])
 
     @patch("main_daily.SpainCovid19MinistryReport")
     @patch("main_daily.influx")
@@ -179,8 +184,11 @@ class MainDailyUnitTest(unittest.TestCase):
         accumulated_icu = MagicMock()
         accumulated_deaths = MagicMock()
         hospitals_pdf = MagicMock()
+        percentage_admitted = MagicMock()
+        percentage_icu = MagicMock()
         deaths_pdf.get_column_data.side_effect = [accumulated_deaths]
-        hospitals_pdf.get_column_data.side_effect = [accumulated_admitted, accumulated_icu]
+        hospitals_pdf.get_column_data.side_effect = [accumulated_admitted, accumulated_icu,
+                                                     percentage_admitted, percentage_icu]
         ministry_report_mock.side_effect = [pcrs_pdf, deaths_pdf, hospitals_pdf]
 
         yesterday_pcrs_accumulated = MagicMock()
@@ -210,7 +218,9 @@ class MainDailyUnitTest(unittest.TestCase):
 
         influx_mock.insert_stats.assert_has_calls([call(Measurement.PCRS_LAST_24H, today, last_24h_pcrs),
                                                    call(Measurement.ACCUMULATED_INCIDENCE, today,
-                                                        accumulated_incidence)])
+                                                        accumulated_incidence),
+                                                   call(Measurement.PERCENTAGE_ADMITTED, today, percentage_admitted),
+                                                   call(Measurement.PERCENTAGE_ICU, today, percentage_icu)])
 
     @patch("main_daily.influx")
     @patch("main_daily.get_today_numbers")
