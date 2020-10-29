@@ -57,7 +57,7 @@ def update_database(today):
         accumulated_pcrs_today = pcrs_report.get_column_data(1)
 
     accumulated_admitted_today = hospital_report.get_column_data(1)
-    accumulated_icu_today = hospital_report.get_column_data(2)
+    accumulated_icu_today = hospital_report.get_column_data(1, part=1)
     accumulated_deaths_today = deaths_report.get_column_data(1)
 
     update_stat(Measurement.PCRS, accumulated_pcrs_today, today)
