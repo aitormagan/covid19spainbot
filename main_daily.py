@@ -46,7 +46,7 @@ def subtract_days_ignoring_weekends(initial_date, days_to_substract):
 def update_database(today):
     pcrs_report = SpainCovid19MinistryReport(today, 1)
     deaths_report = SpainCovid19MinistryReport(today, 5, (142, 539, 142+343, 539+265))
-    hospital_report = SpainCovid19MinistryReport(today, 3)
+    hospital_report = SpainCovid19MinistryReport(today, 3, (117, 25, 117+387, 25+790))
 
     try:
         accumulated_pcrs_today = pcrs_report.get_column_data(1)
@@ -71,10 +71,10 @@ def update_database(today):
     accumulated_incidence = pcrs_report.get_column_data(3, 1, float)
     influx.insert_stats(Measurement.ACCUMULATED_INCIDENCE, today, accumulated_incidence)
 
-    today_percentage_admitted = hospital_report.get_column_data(5, cast=float)
+    today_percentage_admitted = hospital_report.get_column_data(4, cast=float, part=1)
     influx.insert_stats(Measurement.PERCENTAGE_ADMITTED, today, today_percentage_admitted)
 
-    today_percentage_icu = hospital_report.get_column_data(7, cast=float)
+    today_percentage_icu = hospital_report.get_column_data(6, cast=float, part=1)
     influx.insert_stats(Measurement.PERCENTAGE_ICU, today, today_percentage_icu)
 
 
