@@ -124,8 +124,9 @@ class InfluxUnitTest(unittest.TestCase):
                                                         call(Measurement.PCRS_LAST_24H, date),
                                                         call(Measurement.ADMITTED_PEOPLE, date),
                                                         call(Measurement.ICU_PEOPLE, date)])
-        influx.get_stat_group_by_day.assert_called_once_with(Measurement.ACCUMULATED_INCIDENCE,
-                                                             datetime(2020, 10, 9))
+        influx.get_stat_group_by_day.assert_has_calls([call(Measurement.ACCUMULATED_INCIDENCE, datetime(2020, 10, 9)),
+                                                       call(Measurement.PERCENTAGE_ADMITTED, datetime(2020, 10, 9)),
+                                                       call(Measurement.PERCENTAGE_ICU, datetime(2020, 10, 9))])
 
     def test_when_get_all_stats_accumulated_until_day_then_two_value_returned(self):
         influx = Influx()
