@@ -82,8 +82,8 @@ class Influx:
         admitted = self.get_stat_group_by_week(Measurement.ADMITTED_PEOPLE, day)
         icu = self.get_stat_group_by_week(Measurement.ICU_PEOPLE, day)
         accumulated_incidence = self.get_stat_group_by_day(Measurement.ACCUMULATED_INCIDENCE, week_friday)
-        percentage_admitted = self.get_stat_group_by_week(Measurement.PERCENTAGE_ADMITTED, day)
-        percentage_icu = self.get_stat_group_by_week(Measurement.PERCENTAGE_ICU, day)
+        percentage_admitted = self.get_stat_group_by_day(Measurement.PERCENTAGE_ADMITTED, week_friday)
+        percentage_icu = self.get_stat_group_by_day(Measurement.PERCENTAGE_ICU, week_friday)
 
         return self._pack_elements(**{
             Measurement.PCRS.value: pcrs,
