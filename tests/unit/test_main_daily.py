@@ -130,8 +130,9 @@ class MainDailyUnitTest(unittest.TestCase):
         percentage_admitted = MagicMock()
         percentage_icu = MagicMock()
         deaths_pdf.get_column_data.side_effect = [accumulated_deaths]
-        hospitals_pdf.get_column_data.side_effect = [accumulated_admitted, accumulated_icu,
-                                                     percentage_admitted, percentage_icu]
+        hospitals_pdf.get_column_data.side_effect = [accumulated_admitted, accumulated_admitted,
+                                                     accumulated_icu, percentage_admitted,
+                                                     percentage_icu]
         ministry_report_mock.side_effect = [pcrs_pdf, deaths_pdf, hospitals_pdf, pcrs_pdf]
 
         yesterday_pcrs_accumulated = MagicMock()
@@ -187,8 +188,9 @@ class MainDailyUnitTest(unittest.TestCase):
         percentage_admitted = MagicMock()
         percentage_icu = MagicMock()
         deaths_pdf.get_column_data.side_effect = [accumulated_deaths]
-        hospitals_pdf.get_column_data.side_effect = [accumulated_admitted, accumulated_icu,
-                                                     percentage_admitted, percentage_icu]
+        hospitals_pdf.get_column_data.side_effect = [accumulated_admitted, accumulated_admitted,
+                                                     accumulated_icu, percentage_admitted,
+                                                     percentage_icu]
         ministry_report_mock.side_effect = [pcrs_pdf, deaths_pdf, hospitals_pdf]
 
         yesterday_pcrs_accumulated = MagicMock()
