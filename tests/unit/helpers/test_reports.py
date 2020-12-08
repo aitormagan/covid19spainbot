@@ -251,10 +251,10 @@ class ReportsUnitTest(unittest.TestCase):
                                                                   yesterday_data.get(Measurement.PERCENTAGE_ICU), "%")])
 
         get_report_sentence_mock.assert_has_calls([
-            call("💉 PCRs", today_data.get(Measurement.PCRS),
+            call("💉 PCRs/AGs", today_data.get(Measurement.PCRS),
                  yesterday_data.get(Measurement.PCRS),
                  accumulated_today.get(Measurement.PCRS)),
-            call("💉 PCRs 24h", today_data.get(Measurement.PCRS_LAST_24H),
+            call("💉 PCRs/AGs 24h", today_data.get(Measurement.PCRS_LAST_24H),
                  yesterday_data.get(Measurement.PCRS_LAST_24H)),
             call("😢 Muertes", today_data.get(Measurement.DEATHS),
                  yesterday_data.get(Measurement.DEATHS),
@@ -303,7 +303,7 @@ class ReportsUnitTest(unittest.TestCase):
                                                                   yesterday_data.get(Measurement.PERCENTAGE_ICU), "%")])
 
         get_report_sentence_mock.assert_has_calls([
-            call("💉 PCRs", today_data.get(Measurement.PCRS),
+            call("💉 PCRs/AGs", today_data.get(Measurement.PCRS),
                  yesterday_data.get(Measurement.PCRS),
                  accumulated_today.get(Measurement.PCRS)),
             call("😢 Muertes", today_data.get(Measurement.DEATHS),
