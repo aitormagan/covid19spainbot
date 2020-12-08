@@ -36,10 +36,10 @@ def get_global_data(dict_to_unpack):
     if ia_exists:
         result[Measurement.ACCUMULATED_INCIDENCE] = calculate_global_incidence(dict_to_unpack,
                                                                                Measurement.ACCUMULATED_INCIDENCE)
-        result[Measurement.PERCENTAGE_ADMITTED] = calculate_global_incidence(dict_to_unpack,
-                                                                             Measurement.PERCENTAGE_ADMITTED)
-        result[Measurement.PERCENTAGE_ICU] = calculate_global_incidence(dict_to_unpack,
-                                                                        Measurement.PERCENTAGE_ICU)
+        # result[Measurement.PERCENTAGE_ADMITTED] = calculate_global_incidence(dict_to_unpack,
+        #                                                                      Measurement.PERCENTAGE_ADMITTED)
+        # result[Measurement.PERCENTAGE_ICU] = calculate_global_incidence(dict_to_unpack,
+        #                                                                 Measurement.PERCENTAGE_ICU)
 
     return result
 
@@ -82,11 +82,11 @@ def get_territorial_unit_report(territorial_unit, header_date, today_data, yeste
     sentences.append(get_report_sentence("😢 Muertes", today_data.get(Measurement.DEATHS),
                                          yesterday_data.get(Measurement.DEATHS),
                                          accumulated_today.get(Measurement.DEATHS)))
-    sentences.append("")
-    sentences.append(get_report_sentence_with_unit("🚑 Hospitalizados", today_data.get(Measurement.PERCENTAGE_ADMITTED),
-                                                   yesterday_data.get(Measurement.PERCENTAGE_ADMITTED), "%"))
-    sentences.append(get_report_sentence_with_unit("🏥 UCI", today_data.get(Measurement.PERCENTAGE_ICU),
-                                                   yesterday_data.get(Measurement.PERCENTAGE_ICU), "%"))
+    # sentences.append("")
+    # sentences.append(get_report_sentence_with_unit("🚑 Hospitalizados", today_data.get(Measurement.PERCENTAGE_ADMITTED),
+    #                                                yesterday_data.get(Measurement.PERCENTAGE_ADMITTED), "%"))
+    # sentences.append(get_report_sentence_with_unit("🏥 UCI", today_data.get(Measurement.PERCENTAGE_ICU),
+    #                                                yesterday_data.get(Measurement.PERCENTAGE_ICU), "%"))
 
     return "\n".join(sentences)
 
