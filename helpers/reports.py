@@ -66,12 +66,12 @@ def get_territorial_unit_report(territorial_unit, header_date, today_data, yeste
     sentences = list()
     sentences.append(f"{territorial_unit} - {header_date}:")
     sentences.append("")
-    sentences.append(get_report_sentence("💉 PCRs", today_data.get(Measurement.PCRS),
+    sentences.append(get_report_sentence("💉 PCRs/AGs", today_data.get(Measurement.PCRS),
                                          yesterday_data.get(Measurement.PCRS),
                                          accumulated_today.get(Measurement.PCRS)))
 
     if Measurement.PCRS_LAST_24H in today_data:
-        sentences.append(get_report_sentence("💉 PCRs 24h", today_data.get(Measurement.PCRS_LAST_24H),
+        sentences.append(get_report_sentence("💉 PCRs/AGs 24h", today_data.get(Measurement.PCRS_LAST_24H),
                                              yesterday_data.get(Measurement.PCRS_LAST_24H)))
 
     sentences.append(get_report_sentence_with_unit("💥 IA 14 días",
