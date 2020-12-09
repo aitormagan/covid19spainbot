@@ -6,6 +6,7 @@ from helpers.twitter import Twitter
 from helpers.db import Influx, Measurement
 from helpers.ministry_report import SpainCovid19MinistryReport
 from helpers.reports import get_report_by_ccaa, get_graph_url, get_global_report
+from constants import DAYS_WITHOUT_REPORT
 
 twitter = Twitter()
 influx = Influx()
@@ -37,7 +38,7 @@ def subtract_days_ignoring_weekends(initial_date, days_to_substract):
     while days_to_substract > 0:
         result = result - timedelta(days=1)
 
-        if result.weekday() < 5:
+        if result.weekday() < 5 and result.date() not in DAYS_WITHOUT_REPORT:
             days_to_substract -= 1
 
     return result

@@ -1,4 +1,5 @@
 from datetime import datetime
+from constants import DAYS_WITHOUT_REPORT
 import math
 import tabula
 
@@ -34,7 +35,13 @@ class SpainCovid19MinistryReport:
         initial_weekend_without_report = datetime(2020, 7, 4)
         weekends = math.ceil((date - initial_weekend_without_report).days / 7) \
             if date > initial_weekend_without_report else 0
-        return 105 + (date - reference_date).days - weekends * 2
+        pdf_id = 105 + (date - reference_date).days - weekends * 2
+
+        for day_without_report in DAYS_WITHOUT_REPORT:
+            if date.date() > day_without_report:
+                pdf_id -= 1
+
+        return pdf_id
 
     def get_column_data(self, column, part=0, cast=int):
         first_column = self.data_frame.columns[0]

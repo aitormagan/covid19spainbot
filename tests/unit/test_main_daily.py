@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from unittest.mock import patch, MagicMock, call, ANY
 from main_daily import subtract_days_ignoring_weekends, main, Measurement, HTTPError, get_today_numbers, \
     publish_report, update_database, update_stat, get_date_header, get_final_tweet
@@ -106,6 +106,16 @@ class MainDailyUnitTest(unittest.TestCase):
     def test_given_29_july_and_four_day_when_subtract_days_ignoring_weekends_then_thursday(self):
         date = datetime(2020, 7, 29)
         self.assertEqual(datetime(2020, 7, 23), subtract_days_ignoring_weekends(date, 4))
+
+    @patch("main_daily.DAYS_WITHOUT_REPORT", [date(2020, 12, 8)])
+    def test_given_9_december_and_one_day_without_report_when_subtract_days_ignoring_weekends_then_monday(self):
+        date = datetime(2020, 12, 9)
+        self.assertEqual(datetime(2020, 12, 7), subtract_days_ignoring_weekends(date, 1))
+
+    @patch("main_daily.DAYS_WITHOUT_REPORT", [date(2020, 12, 8), date(2020, 12, 9)])
+    def test_given_10_december_and_two_days_without_report_when_subtract_days_ignoring_weekends_then_monday(self):
+        date = datetime(2020, 12, 10)
+        self.assertEqual(datetime(2020, 12, 7), subtract_days_ignoring_weekends(date, 1))
 
     @patch("main_daily.SpainCovid19MinistryReport")
     @patch("main_daily.influx")

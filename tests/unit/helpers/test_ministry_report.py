@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from datetime import datetime
+from datetime import datetime, date
 from pandas import DataFrame
 from helpers.ministry_report import SpainCovid19MinistryReport
 from helpers.spain_geography import CCAA_POPULATION
@@ -22,6 +22,14 @@ class SpainCovid19MinistryReportUnitTest(unittest.TestCase):
 
     def test_given_13_7_when_get_id_then_161_returned(self):
         self.assertEqual(SpainCovid19MinistryReport.get_pdf_id_for_date(datetime(2020, 7, 13)), 161)
+
+    @patch("helpers.ministry_report.DAYS_WITHOUT_REPORT", [date(2020, 12, 8)])
+    def test_given_9_12_and_8_12_without_report_when_get_id_then_267_returned(self):
+        self.assertEqual(SpainCovid19MinistryReport.get_pdf_id_for_date(datetime(2020, 12, 9)), 267)
+
+    @patch("helpers.ministry_report.DAYS_WITHOUT_REPORT", [date(2020, 12, 7), date(2020, 12, 8)])
+    def test_given_9_12_and_7_12_and_8_12_without_report_when_get_id_then_266_returned(self):
+        self.assertEqual(SpainCovid19MinistryReport.get_pdf_id_for_date(datetime(2020, 12, 9)), 266)
 
     @patch("helpers.ministry_report.tabula")
     @patch("helpers.ministry_report.SpainCovid19MinistryReport.get_pdf_id_for_date")
