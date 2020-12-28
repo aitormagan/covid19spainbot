@@ -1,6 +1,6 @@
 import sys
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from urllib.error import HTTPError
 from helpers.twitter import Twitter
 from helpers.db import Influx, Measurement
@@ -110,7 +110,7 @@ def publish_report(today, yesterday):
     today_data = influx.get_all_stats_group_by_day(today)
     yesterday_data = influx.get_all_stats_group_by_day(yesterday)
     accumulated_today = influx.get_all_stats_accumulated_until_day(today)
-    date_header = get_date_header(today)
+    date_header = get_date_header(today, yesterday)
 
     spain_report = get_global_report(date_header, today_data, yesterday_data, accumulated_today)
     graph_url = get_graph_url(today - timedelta(31), today)
@@ -123,12 +123,16 @@ def publish_report(today, yesterday):
     logging.info("Tweets published correctly!")
 
 
-def get_date_header(date):
+def get_date_header(today, yesterday):
     date_format = "%d/%m/%Y"
-    if date.weekday() == 0:
-        date_header = f"{(date - timedelta(3)).strftime(date_format)} al {(date - timedelta(1)).strftime(date_format)}"
+
+    today = today.date()
+    yesterday = yesterday.date()
+
+    if today - timedelta(days=1) == yesterday:
+        date_header = (today - timedelta(1)).strftime(date_format)
     else:
-        date_header = (date - timedelta(1)).strftime(date_format)
+        date_header = f"{yesterday.strftime(date_format)} al {(today - timedelta(1)).strftime(date_format)}"
 
     return date_header
 

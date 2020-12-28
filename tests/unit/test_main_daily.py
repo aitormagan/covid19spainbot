@@ -289,7 +289,7 @@ class MainDailyUnitTest(unittest.TestCase):
         influx_mock.get_all_stats_group_by_day.assert_has_calls([call(today), call(yesterday)])
         get_report_by_ccaa_mock.assert_called_once_with(get_date_header_mock.return_value, today_data, yesterday_data,
                                                         accumulated_today)
-        get_date_header_mock.assert_called_once_with(today)
+        get_date_header_mock.assert_called_once_with(today, yesterday)
 
         influx_mock.get_all_stats_accumulated_until_day.assert_called_once_with(today)
         get_global_report_mock.assert_called_once_with(get_date_header_mock.return_value, today_data, yesterday_data,
@@ -305,15 +305,17 @@ class MainDailyUnitTest(unittest.TestCase):
 
     def test_given_monday_when_get_date_header_then_weekend_text_included(self):
         date = datetime(2020, 7, 27)
+        yesterday = datetime(2020, 7, 24)
 
-        header = get_date_header(date)
+        header = get_date_header(date, yesterday)
 
         self.assertEqual("24/07/2020 al 26/07/2020", header)
 
     def test_given_tuesday_when_get_date_header_then_weekend_text_not_included(self):
         date = datetime(2020, 7, 28)
+        yesterday = datetime(2020, 7, 27)
 
-        header = get_date_header(date)
+        header = get_date_header(date, yesterday)
 
         self.assertEqual("27/07/2020", header)
 
