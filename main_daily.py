@@ -60,31 +60,28 @@ def update_database(today):
     accumulated_admitted_today = hospital_report.get_column_data(1)
     accumulated_icu_today = hospital_report.get_column_data(3)
     accumulated_deaths_today = deaths_report.get_column_data(1)
+    today_percentage_admitted = hospital_report.get_column_data(7, cast=float)
+    today_percentage_icu = hospital_report.get_column_data(9, cast=float)
+    today_pcrs_last_24h = pcrs_report.get_column_data(2)
+    accumulated_incidence = pcrs_report.get_column_data(3, 1, float)
 
     update_stat(Measurement.PCRS, accumulated_pcrs_today, today)
     update_stat(Measurement.DEATHS, accumulated_deaths_today, today)
     update_stat(Measurement.ADMITTED_PEOPLE, accumulated_admitted_today, today)
     update_stat(Measurement.ICU_PEOPLE, accumulated_icu_today, today)
 
-    today_pcrs_last_24h = pcrs_report.get_column_data(2)
     influx.insert_stats(Measurement.PCRS_LAST_24H, today, today_pcrs_last_24h)
-
-    accumulated_incidence = pcrs_report.get_column_data(3, 1, float)
     influx.insert_stats(Measurement.ACCUMULATED_INCIDENCE, today, accumulated_incidence)
-
-    today_percentage_admitted = hospital_report.get_column_data(7, cast=float)
     influx.insert_stats(Measurement.PERCENTAGE_ADMITTED, today, today_percentage_admitted)
-
-    today_percentage_icu = hospital_report.get_column_data(9, cast=float)
     influx.insert_stats(Measurement.PERCENTAGE_ICU, today, today_percentage_icu)
 
 
 def _get_hospitals_report(date):
     try:
-        hospital_report = SpainCovid19MinistryReport(date, 3, (160, 33, 160 + 260, 33 + 790))
+        hospital_report = SpainCovid19MinistryReport(date, 3, (160, 33, 160 + 250, 33 + 790))
         hospital_report.get_column_data(1)
     except:
-        hospital_report = SpainCovid19MinistryReport(date, 3, (150, 33, 150 + 260, 33 + 790))
+        hospital_report = SpainCovid19MinistryReport(date, 3, (150, 33, 150 + 250, 33 + 790))
 
     return hospital_report
 

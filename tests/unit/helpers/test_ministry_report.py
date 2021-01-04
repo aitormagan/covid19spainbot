@@ -46,7 +46,7 @@ class SpainCovid19MinistryReportUnitTest(unittest.TestCase):
         returned_data_frame = report.data_frame
 
         tabula_mock.read_pdf.assert_called_once_with(SpainCovid19MinistryReport.PDF_URL_FORMAT.format(
-            get_pdf_for_id_mock.return_value), pages=str(page), area=area)
+            get_pdf_for_id_mock.return_value), pages=str(page), area=area, pandas_options={'dtype': str})
         get_pdf_for_id_mock.assert_called_once_with(date)
 
         self.assertEqual(valid_data["Col1*"], list(returned_data_frame['Col1']))

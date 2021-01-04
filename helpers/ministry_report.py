@@ -18,9 +18,10 @@ class SpainCovid19MinistryReport:
     @property
     def data_frame(self):
         if self._data_frame is None:
+            col2str = {'dtype': str}
             data_frames = tabula.read_pdf(self.PDF_URL_FORMAT.format(self.get_pdf_id_for_date(self._date)),
-                                          pages=str(self._page), area=self._area)
-            self._data_frame = list(filter(lambda x: len(x) >= 21, data_frames))[0]
+                                          pages=str(self._page), area=self._area, pandas_options=col2str)
+            self._data_frame = list(filter(lambda x: len(x) >= 19, data_frames))[0]
 
             for column in self._data_frame:
                 self._data_frame[column.replace('*', '').strip()] = self._data_frame.pop(column)
