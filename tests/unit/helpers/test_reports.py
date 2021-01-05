@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch, call, MagicMock
 from helpers.reports import get_tendency_emoji, get_report_sentence, get_report_by_ccaa, get_graph_url, \
     get_global_report, get_global_data, get_territorial_unit_report, get_report_sentence_with_unit, \
-    calculate_global_incidence, get_vaccinations_sentence
+    calculate_global_incidence
 from helpers.db import Measurement
 from helpers.spain_geography import CCAA_POPULATION
 from constants import GRAPH_IMAGE_PATH
@@ -208,13 +208,11 @@ class ReportsUnitTest(unittest.TestCase):
 
         self.assertEqual(expected_result, result)
 
-    @patch("helpers.reports.get_vaccinations_sentence")
     @patch("helpers.reports.get_report_sentence")
     @patch("helpers.reports.get_report_sentence_with_unit")
     def test_given_pcrs_24_data_when_get_territorial_unit_report_then_tweet_with_pcrs24h_returned(self,
                                                                                                   get_report_sentence_with_unit_mock,
-                                                                                                  get_report_sentence_mock,
-                                                                                                  get_vaccinations_sentence_mock):
+                                                                                                  get_report_sentence_mock):
 
         territorial_unit = MagicMock()
         date_header = MagicMock()
@@ -232,14 +230,12 @@ class ReportsUnitTest(unittest.TestCase):
         deaths = "deaths"
         admitted = "admitted"
         uci = "uci"
-        vaccinations = "vaccinations"
         get_report_sentence_mock.side_effect = [pcrs, pcrs24h, deaths]
         accumulated_string = "0,21"
         get_report_sentence_with_unit_mock.side_effect = [accumulated_string, admitted, uci]
-        get_vaccinations_sentence_mock.return_value = vaccinations
 
         expected_tweet = f"{territorial_unit} - {date_header}:\n\n{pcrs}\n{pcrs24h}\n{accumulated_string}" \
-                         f"\n\n{deaths}\n\n{admitted}\n{uci}\n\n{vaccinations}"
+                         f"\n\n{deaths}\n\n{admitted}\n{uci}"
 
         self.assertEqual(expected_tweet, get_territorial_unit_report(territorial_unit, date_header, today_data,
                                                                      yesterday_data, accumulated_today))
@@ -265,16 +261,11 @@ class ReportsUnitTest(unittest.TestCase):
                  accumulated_today.get(Measurement.DEATHS))
         ])
 
-        get_vaccinations_sentence_mock.assert_called_once_with(territorial_unit,
-                                                               accumulated_today.get(Measurement.VACCINATIONS))
-
-    @patch("helpers.reports.get_vaccinations_sentence")
     @patch("helpers.reports.get_report_sentence")
     @patch("helpers.reports.get_report_sentence_with_unit")
     def test_given_no_pcrs_24_data_when_get_territorial_unit_report_then_tweet_without_pcrs24h_returned(self,
                                                                                                         get_report_sentence_with_unit_mock,
-                                                                                                        get_report_sentence_mock,
-                                                                                                        get_vaccinations_sentence_mock):
+                                                                                                        get_report_sentence_mock):
 
         territorial_unit = MagicMock()
         date_header = MagicMock()
@@ -291,14 +282,12 @@ class ReportsUnitTest(unittest.TestCase):
         deaths = "deaths"
         admitted = "admitted"
         uci = "uci"
-        vaccinations = "vaccinations"
         get_report_sentence_mock.side_effect = [pcrs, deaths]
         accumulated_string = "0,21"
         get_report_sentence_with_unit_mock.side_effect = [accumulated_string, admitted, uci]
-        get_vaccinations_sentence_mock.return_value = vaccinations
 
         expected_tweet = f"{territorial_unit} - {date_header}:\n\n{pcrs}\n{accumulated_string}" \
-                         f"\n\n{deaths}\n\n{admitted}\n{uci}\n\n{vaccinations}"
+                         f"\n\n{deaths}\n\n{admitted}\n{uci}"
 
         self.assertEqual(expected_tweet, get_territorial_unit_report(territorial_unit, date_header, today_data,
                                                                      yesterday_data, accumulated_today))
@@ -321,10 +310,6 @@ class ReportsUnitTest(unittest.TestCase):
                  None,
                  accumulated_today.get(Measurement.DEATHS))
         ])
-
-        get_vaccinations_sentence_mock.assert_called_once_with(territorial_unit,
-                                                               accumulated_today.get(Measurement.VACCINATIONS))
-
 
     @patch("helpers.reports.get_tendency_emoji", return_value="^ 1")
     def test_given_data_when_get_report_sentence_with_unit_then_impact_returned(self, get_tendency_emoji_mock):
@@ -386,14 +371,6 @@ class ReportsUnitTest(unittest.TestCase):
         emoji = get_tendency_emoji(20, 20)
 
         self.assertEqual("🔙", emoji)
-
-    @patch("helpers.reports.CCAA_POPULATION", {"Madrid": 8000000, "Cataluña": 10000000})
-    def test_given_existing_ccaa_when_get_vaccination_sentence_then_ccaa_population_used(self):
-        self.assertEqual("💉 Tot. Vacunados: 2.000 (0,03%)", get_vaccinations_sentence("Madrid", 2000))
-
-    @patch("helpers.reports.CCAA_POPULATION", {"Madrid": 8000000, "Cataluña": 10000000})
-    def test_given_non_existing_ccaa_when_get_vaccination_sentence_then_whole_population_used(self):
-        self.assertEqual("💉 Tot. Vacunados: 2.000 (0,01%)", get_vaccinations_sentence("España", 2000))
 
     def test_given_no_dates_when_get_graph_url_then_base_url_returned(self):
         self.assertEqual(DEFAULT_GRAPH_IMAGE_URL, get_graph_url())

@@ -2,12 +2,11 @@ import unittest
 from datetime import datetime, timedelta, date
 from unittest.mock import patch, MagicMock, call, ANY
 from main_daily import subtract_days_ignoring_weekends, main, Measurement, HTTPError, get_today_numbers, \
-    publish_report, update_database, update_stat, get_date_header, get_final_tweet, update_vaccinations
+    publish_report, update_database, update_stat, get_date_header, get_final_tweet
 
 
 class MainDailyUnitTest(unittest.TestCase):
 
-    @patch("main_daily.update_vaccinations")
     @patch("main_daily.subtract_days_ignoring_weekends")
     @patch("main_daily.update_database")
     @patch("main_daily.publish_report")
@@ -16,21 +15,18 @@ class MainDailyUnitTest(unittest.TestCase):
     def test_given_data_when_main_then_update_and_publish_not_called(self, influx_mock, datetime_mock,
                                                                      publish_report_mock,
                                                                      update_database_mock,
-                                                                     subtract_days_ignoring_weekends_mock,
-                                                                     update_vaccinations_mock):
+                                                                     subtract_days_ignoring_weekends_mock):
 
         influx_mock.get_stat_group_by_day.return_value = {"Madrid": 1}
 
         main()
 
         update_database_mock.assert_not_called()
-        update_vaccinations_mock.assert_not_called()
         publish_report_mock.assert_not_called()
         datetime_mock.now.assert_called_once_with()
         subtract_days_ignoring_weekends_mock.assert_called_once_with(datetime_mock.now.return_value, 1)
         influx_mock.get_stat_group_by_day.assert_called_once_with(Measurement.PCRS, datetime_mock.now.return_value)
 
-    @patch("main_daily.update_vaccinations")
     @patch("main_daily.subtract_days_ignoring_weekends")
     @patch("main_daily.update_database")
     @patch("main_daily.publish_report")
@@ -39,14 +35,12 @@ class MainDailyUnitTest(unittest.TestCase):
     def test_given_no_data_when_main_then_update_and_publish_called(self, influx_mock, datetime_mock,
                                                                     publish_report_mock,
                                                                     update_database_mock,
-                                                                    subtract_days_ignoring_weekends_mock,
-                                                                    update_vaccinations_mock):
+                                                                    subtract_days_ignoring_weekends_mock):
 
         influx_mock.get_stat_group_by_day.return_value = {}
 
         main()
 
-        update_vaccinations_mock.assert_called_once_with(datetime_mock.now.return_value)
         update_database_mock.assert_called_once_with(datetime_mock.now.return_value)
         publish_report_mock.assert_called_once_with(datetime_mock.now.return_value,
                                                     subtract_days_ignoring_weekends_mock.return_value)
@@ -239,33 +233,6 @@ class MainDailyUnitTest(unittest.TestCase):
                                                         accumulated_incidence),
                                                    call(Measurement.PERCENTAGE_ADMITTED, today, percentage_admitted),
                                                    call(Measurement.PERCENTAGE_ICU, today, percentage_icu)])
-
-    @patch("main_daily.SpainVaccinationReport")
-    @patch("main_daily.update_stat")
-    def test_given_no_error_when_update_vaccinations_then_report_obtained_and_stats_updated(self, update_stat_mock,
-                                                                                            spain_vaccination_report_mock):
-        today = MagicMock()
-        update_vaccinations(today)
-        spain_vaccination_report_mock.assert_called_once_with()
-        spain_vaccination_report_mock.return_value.get_vaccination_by_ccaa.assert_called_once_with()
-        vaccinations_by_ccaa = spain_vaccination_report_mock.return_value.get_vaccination_by_ccaa.return_value
-        update_stat_mock.assert_called_once_with(Measurement.VACCINATIONS, vaccinations_by_ccaa, today)
-
-    @patch("main_daily.twitter")
-    @patch("main_daily.SpainVaccinationReport")
-    @patch("main_daily.update_stat")
-    def test_given_error_when_update_vaccinations_then_report_exception_handled(self, update_stat_mock,
-                                                                                spain_vaccination_report_mock,
-                                                                                twitter_mock):
-        today = MagicMock()
-        spain_vaccination_report_mock.return_value.get_vaccination_by_ccaa.side_effect = Exception
-
-        update_vaccinations(today)
-
-        spain_vaccination_report_mock.assert_called_once_with()
-        spain_vaccination_report_mock.return_value.get_vaccination_by_ccaa.assert_called_once_with()
-        update_stat_mock.assert_not_called()
-        twitter_mock.send_dm.assert_called_once_with("Error updating vaccinations")
 
     @patch("main_daily.influx")
     @patch("main_daily.get_today_numbers")
