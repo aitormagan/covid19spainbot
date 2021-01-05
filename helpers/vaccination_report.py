@@ -6,10 +6,10 @@ from pyexcel_ods import get_data
 class SpainVaccinationReport:
 
     def __init__(self):
-        self.__url = "https://www.mscbs.gob.es/profesionales/saludPublica/ccayes/alertasActual/nCov/documentos/Informe_Comunicacion.ods"
+        self._url = "https://www.mscbs.gob.es/profesionales/saludPublica/ccayes/alertasActual/nCov/documentos/Informe_Comunicacion.ods"
 
     def get_vaccination_by_ccaa(self):
-        res = requests.get(self.__url)
+        res = requests.get(self._url)
         result = {}
 
         with NamedTemporaryFile(suffix=".ods") as temp_file:
