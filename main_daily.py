@@ -142,7 +142,7 @@ def get_final_tweet():
     items = ["¡Accede a los gráficos interactivos!",
              "",
              "Evolución ➡️ https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1",
-             "Comparación ➡️ https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1"
+             "Comparación ➡️ https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1",
              "",
              "* Porcentaje vacunados sobre población total"]
 
