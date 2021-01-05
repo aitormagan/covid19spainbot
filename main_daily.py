@@ -23,6 +23,7 @@ def main():
     if not data:
         try:
             update_database(today)
+            update_vaccinations(today)
             publish_report(today, yesterday)
 
         except HTTPError:
@@ -49,7 +50,6 @@ def update_database(today):
     pcrs_report = SpainCovid19MinistryReport(today, 1)
     deaths_report = SpainCovid19MinistryReport(today, 5, (142, 539, 142+343, 539+265))
     hospital_report = _get_hospitals_report(today)
-    vaccination_report = SpainVaccinationReport()
 
     try:
         accumulated_pcrs_today = pcrs_report.get_column_data(1)
@@ -66,18 +66,26 @@ def update_database(today):
     today_percentage_icu = hospital_report.get_column_data(9, cast=float)
     today_pcrs_last_24h = pcrs_report.get_column_data(2)
     accumulated_incidence = pcrs_report.get_column_data(3, 1, float)
-    accumulated_vaccinations = vaccination_report.get_vaccination_by_ccaa()
 
     update_stat(Measurement.PCRS, accumulated_pcrs_today, today)
     update_stat(Measurement.DEATHS, accumulated_deaths_today, today)
     update_stat(Measurement.ADMITTED_PEOPLE, accumulated_admitted_today, today)
     update_stat(Measurement.ICU_PEOPLE, accumulated_icu_today, today)
-    update_stat(Measurement.VACCINATIONS, accumulated_vaccinations, today)
 
     influx.insert_stats(Measurement.PCRS_LAST_24H, today, today_pcrs_last_24h)
     influx.insert_stats(Measurement.ACCUMULATED_INCIDENCE, today, accumulated_incidence)
     influx.insert_stats(Measurement.PERCENTAGE_ADMITTED, today, today_percentage_admitted)
     influx.insert_stats(Measurement.PERCENTAGE_ICU, today, today_percentage_icu)
+
+
+def update_vaccinations(today):
+    try:
+        vaccination_report = SpainVaccinationReport()
+        accumulated_vaccinations = vaccination_report.get_vaccination_by_ccaa()
+        update_stat(Measurement.VACCINATIONS, accumulated_vaccinations, today)
+    except Exception as e:
+        logging.exception("Unhandled exception while trying to update vaccinations")
+        twitter.send_dm("Error updating vaccinations")
 
 
 def _get_hospitals_report(date):
