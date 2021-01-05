@@ -124,7 +124,7 @@ def get_vaccinations_sentence(territorial_unit, vaccinated_amount):
     percentage_population = vaccinated_amount / population * 100
     percentage_str = "{0:.2f}".format(percentage_population).replace(".", ",")
     vaccinated_str = "{0:,}".format(vaccinated_amount).replace(",", ".")
-    return "💉 Vacunados: {0} ({1}%)".format(vaccinated_str, percentage_str)
+    return "💉 Tot. Vacunados: {0} ({1}%)".format(vaccinated_str, percentage_str)
 
 
 def get_graph_url(start=None, end=None, additional_vars=None):
