@@ -12,6 +12,8 @@ class Measurement(Enum):
     ICU_PEOPLE = "icu_people"
     ADMITTED_PEOPLE = "admitted_people"
     ACCUMULATED_INCIDENCE = "accumulated_incidence"
+    PERCENTAGE_ADMITTED = "percentage_admitted"
+    PERCENTAGE_ICU = "percentage_icu"
 
 
 class Influx:
@@ -80,6 +82,8 @@ class Influx:
         admitted = self.get_stat_group_by_week(Measurement.ADMITTED_PEOPLE, day)
         icu = self.get_stat_group_by_week(Measurement.ICU_PEOPLE, day)
         accumulated_incidence = self.get_stat_group_by_day(Measurement.ACCUMULATED_INCIDENCE, week_friday)
+        percentage_admitted = self.get_stat_group_by_day(Measurement.PERCENTAGE_ADMITTED, week_friday)
+        percentage_icu = self.get_stat_group_by_day(Measurement.PERCENTAGE_ICU, week_friday)
 
         return self._pack_elements(**{
             Measurement.PCRS.value: pcrs,
@@ -87,7 +91,9 @@ class Influx:
             Measurement.PCRS_LAST_24H.value: pcrs_last_24h,
             Measurement.ADMITTED_PEOPLE.value: admitted,
             Measurement.ICU_PEOPLE.value: icu,
-            Measurement.ACCUMULATED_INCIDENCE.value: accumulated_incidence
+            Measurement.ACCUMULATED_INCIDENCE.value: accumulated_incidence,
+            Measurement.PERCENTAGE_ICU.value: percentage_icu,
+            Measurement.PERCENTAGE_ADMITTED.value: percentage_admitted
         })
 
     def get_all_stats_group_by_day(self, day):
@@ -97,6 +103,8 @@ class Influx:
         admitted = self.get_stat_group_by_day(Measurement.ADMITTED_PEOPLE, day)
         icu = self.get_stat_group_by_day(Measurement.ICU_PEOPLE, day)
         accumulated_incidence = self.get_stat_group_by_day(Measurement.ACCUMULATED_INCIDENCE, day)
+        percentage_admitted = self.get_stat_group_by_day(Measurement.PERCENTAGE_ADMITTED, day)
+        percentage_icu = self.get_stat_group_by_day(Measurement.PERCENTAGE_ICU, day)
 
         return self._pack_elements(**{
             Measurement.PCRS.value: pcrs,
@@ -104,7 +112,9 @@ class Influx:
             Measurement.PCRS_LAST_24H.value: pcrs_last_24h,
             Measurement.ADMITTED_PEOPLE.value: admitted,
             Measurement.ICU_PEOPLE.value: icu,
-            Measurement.ACCUMULATED_INCIDENCE.value: accumulated_incidence
+            Measurement.ACCUMULATED_INCIDENCE.value: accumulated_incidence,
+            Measurement.PERCENTAGE_ADMITTED.value: percentage_admitted,
+            Measurement.PERCENTAGE_ICU.value: percentage_icu
         })
 
     def get_all_stats_accumulated_until_day(self, day):

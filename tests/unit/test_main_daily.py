@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from unittest.mock import patch, MagicMock, call, ANY
 from main_daily import subtract_days_ignoring_weekends, main, Measurement, HTTPError, get_today_numbers, \
     publish_report, update_database, update_stat, get_date_header, get_final_tweet
@@ -107,6 +107,16 @@ class MainDailyUnitTest(unittest.TestCase):
         date = datetime(2020, 7, 29)
         self.assertEqual(datetime(2020, 7, 23), subtract_days_ignoring_weekends(date, 4))
 
+    @patch("main_daily.DAYS_WITHOUT_REPORT", [date(2020, 12, 8)])
+    def test_given_9_december_and_one_day_without_report_when_subtract_days_ignoring_weekends_then_monday(self):
+        date = datetime(2020, 12, 9)
+        self.assertEqual(datetime(2020, 12, 7), subtract_days_ignoring_weekends(date, 1))
+
+    @patch("main_daily.DAYS_WITHOUT_REPORT", [date(2020, 12, 8), date(2020, 12, 9)])
+    def test_given_10_december_and_two_days_without_report_when_subtract_days_ignoring_weekends_then_monday(self):
+        date = datetime(2020, 12, 10)
+        self.assertEqual(datetime(2020, 12, 7), subtract_days_ignoring_weekends(date, 1))
+
     @patch("main_daily.SpainCovid19MinistryReport")
     @patch("main_daily.influx")
     @patch("main_daily.update_stat")
@@ -126,8 +136,14 @@ class MainDailyUnitTest(unittest.TestCase):
         accumulated_admitted = MagicMock()
         accumulated_icu = MagicMock()
         accumulated_deaths = MagicMock()
-        deaths_pdf.get_column_data.side_effect = [accumulated_admitted, accumulated_icu, accumulated_deaths]
-        ministry_report_mock.side_effect = [pcrs_pdf, deaths_pdf, pcrs_pdf]
+        hospitals_pdf = MagicMock()
+        percentage_admitted = MagicMock()
+        percentage_icu = MagicMock()
+        deaths_pdf.get_column_data.side_effect = [accumulated_deaths]
+        hospitals_pdf.get_column_data.side_effect = [accumulated_admitted, accumulated_admitted,
+                                                     accumulated_icu, percentage_admitted,
+                                                     percentage_icu]
+        ministry_report_mock.side_effect = [pcrs_pdf, deaths_pdf, hospitals_pdf, pcrs_pdf]
 
         yesterday_pcrs_accumulated = MagicMock()
         yesterday_deaths_accumulated = MagicMock()
@@ -142,10 +158,13 @@ class MainDailyUnitTest(unittest.TestCase):
 
         update_database(today)
 
-        ministry_report_mock.assert_has_calls([call(today, 1), call(today, 2),
-                                               call(today, 1,  (239, 56, 239 + 283, 56 + 756))])
+        ministry_report_mock.assert_has_calls([call(today, 1),
+                                               call(today, 5, (142, 539, 142+343, 539+265)),
+                                               call(today, 3, (160, 33, 160+250, 33+790)),
+                                               call(today, 1, (239, 56, 239 + 283, 56 + 756))])
         pcrs_pdf.get_column_data.assert_has_calls([call(1), call(2), call(3, 1, float)])
-        deaths_pdf.get_column_data.assert_has_calls([call(1), call(2), call(3)])
+        deaths_pdf.get_column_data.assert_has_calls([call(1)])
+        hospitals_pdf.get_column_data.assert_has_calls([call(1), call(3)])
 
         update_stat_mock.assert_has_calls([call(Measurement.PCRS, accumulated_pcrs, today),
                                           call(Measurement.DEATHS, accumulated_deaths, today),
@@ -154,7 +173,9 @@ class MainDailyUnitTest(unittest.TestCase):
 
         influx_mock.insert_stats.assert_has_calls([call(Measurement.PCRS_LAST_24H, today, last_24h_pcrs),
                                                    call(Measurement.ACCUMULATED_INCIDENCE, today,
-                                                        accumulated_incidence)])
+                                                        accumulated_incidence),
+                                                   call(Measurement.PERCENTAGE_ADMITTED, today, percentage_admitted),
+                                                   call(Measurement.PERCENTAGE_ICU, today, percentage_icu)])
 
     @patch("main_daily.SpainCovid19MinistryReport")
     @patch("main_daily.influx")
@@ -173,8 +194,14 @@ class MainDailyUnitTest(unittest.TestCase):
         accumulated_admitted = MagicMock()
         accumulated_icu = MagicMock()
         accumulated_deaths = MagicMock()
-        deaths_pdf.get_column_data.side_effect = [accumulated_admitted, accumulated_icu, accumulated_deaths]
-        ministry_report_mock.side_effect = [pcrs_pdf, deaths_pdf]
+        hospitals_pdf = MagicMock()
+        percentage_admitted = MagicMock()
+        percentage_icu = MagicMock()
+        deaths_pdf.get_column_data.side_effect = [accumulated_deaths]
+        hospitals_pdf.get_column_data.side_effect = [accumulated_admitted, accumulated_admitted,
+                                                     accumulated_icu, percentage_admitted,
+                                                     percentage_icu]
+        ministry_report_mock.side_effect = [pcrs_pdf, deaths_pdf, hospitals_pdf]
 
         yesterday_pcrs_accumulated = MagicMock()
         yesterday_deaths_accumulated = MagicMock()
@@ -189,9 +216,12 @@ class MainDailyUnitTest(unittest.TestCase):
 
         update_database(today)
 
-        ministry_report_mock.assert_has_calls([call(today, 1), call(today, 2)])
+        ministry_report_mock.assert_has_calls([call(today, 1),
+                                               call(today, 5, (142, 539, 142+343, 539+265)),
+                                               call(today, 3, (160, 33, 160+250, 33+790))])
         pcrs_pdf.get_column_data.assert_has_calls([call(1), call(2), call(3, 1, float)])
-        deaths_pdf.get_column_data.assert_has_calls([call(1), call(2), call(3)])
+        deaths_pdf.get_column_data.assert_has_calls([call(1)])
+        hospitals_pdf.get_column_data.assert_has_calls([call(1), call(3)])
 
         update_stat_mock.assert_has_calls([call(Measurement.PCRS, accumulated_pcrs, today),
                                           call(Measurement.DEATHS, accumulated_deaths, today),
@@ -200,7 +230,9 @@ class MainDailyUnitTest(unittest.TestCase):
 
         influx_mock.insert_stats.assert_has_calls([call(Measurement.PCRS_LAST_24H, today, last_24h_pcrs),
                                                    call(Measurement.ACCUMULATED_INCIDENCE, today,
-                                                        accumulated_incidence)])
+                                                        accumulated_incidence),
+                                                   call(Measurement.PERCENTAGE_ADMITTED, today, percentage_admitted),
+                                                   call(Measurement.PERCENTAGE_ICU, today, percentage_icu)])
 
     @patch("main_daily.influx")
     @patch("main_daily.get_today_numbers")
@@ -257,7 +289,7 @@ class MainDailyUnitTest(unittest.TestCase):
         influx_mock.get_all_stats_group_by_day.assert_has_calls([call(today), call(yesterday)])
         get_report_by_ccaa_mock.assert_called_once_with(get_date_header_mock.return_value, today_data, yesterday_data,
                                                         accumulated_today)
-        get_date_header_mock.assert_called_once_with(today)
+        get_date_header_mock.assert_called_once_with(today, yesterday)
 
         influx_mock.get_all_stats_accumulated_until_day.assert_called_once_with(today)
         get_global_report_mock.assert_called_once_with(get_date_header_mock.return_value, today_data, yesterday_data,
@@ -273,15 +305,17 @@ class MainDailyUnitTest(unittest.TestCase):
 
     def test_given_monday_when_get_date_header_then_weekend_text_included(self):
         date = datetime(2020, 7, 27)
+        yesterday = datetime(2020, 7, 24)
 
-        header = get_date_header(date)
+        header = get_date_header(date, yesterday)
 
         self.assertEqual("24/07/2020 al 26/07/2020", header)
 
     def test_given_tuesday_when_get_date_header_then_weekend_text_not_included(self):
         date = datetime(2020, 7, 28)
+        yesterday = datetime(2020, 7, 27)
 
-        header = get_date_header(date)
+        header = get_date_header(date, yesterday)
 
         self.assertEqual("27/07/2020", header)
 

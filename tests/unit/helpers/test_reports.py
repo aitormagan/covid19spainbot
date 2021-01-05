@@ -2,7 +2,7 @@ from datetime import datetime
 import unittest
 from unittest.mock import patch, call, MagicMock
 from helpers.reports import get_tendency_emoji, get_report_sentence, get_report_by_ccaa, get_graph_url, \
-    get_global_report, get_global_data, get_territorial_unit_report, get_accumulated_impact_sentence, \
+    get_global_report, get_global_data, get_territorial_unit_report, get_report_sentence_with_unit, \
     calculate_global_incidence
 from helpers.db import Measurement
 from helpers.spain_geography import CCAA_POPULATION
@@ -136,29 +136,41 @@ class ReportsUnitTest(unittest.TestCase):
         deaths2 = 7
         ia1 = 1.1
         ia2 = 2.2
+        percentage_icu1 = 3.3
+        percentage_icu2 = 4.4
+        percentage_admitted1 = 5.5
+        percentage_admitted2 = 6.6
         data = {
             ccaa1: {
                 Measurement.PCRS: pcrs1,
                 Measurement.DEATHS: deaths1,
-                Measurement.ACCUMULATED_INCIDENCE: ia1
+                Measurement.ACCUMULATED_INCIDENCE: ia1,
+                Measurement.PERCENTAGE_ICU: percentage_icu1,
+                Measurement.PERCENTAGE_ADMITTED: percentage_admitted1
             },
             ccaa2: {
                 Measurement.PCRS: pcrs2,
                 Measurement.DEATHS: deaths2,
-                Measurement.ACCUMULATED_INCIDENCE: ia2
+                Measurement.ACCUMULATED_INCIDENCE: ia2,
+                Measurement.PERCENTAGE_ICU: percentage_icu2,
+                Measurement.PERCENTAGE_ADMITTED: percentage_admitted2
             }
         }
 
         self.assertEqual({
             Measurement.PCRS: pcrs1 + pcrs2,
             Measurement.DEATHS: deaths1 + deaths2,
-            Measurement.ACCUMULATED_INCIDENCE: calculate_global_incidence_mock.return_value
+            Measurement.ACCUMULATED_INCIDENCE: calculate_global_incidence_mock.return_value,
+            Measurement.PERCENTAGE_ADMITTED: calculate_global_incidence_mock.return_value,
+            Measurement.PERCENTAGE_ICU: calculate_global_incidence_mock.return_value
         }, get_global_data(data))
 
-        calculate_global_incidence_mock.assert_called_once_with(data)
+        calculate_global_incidence_mock.assert_has_calls([call(data, Measurement.ACCUMULATED_INCIDENCE),
+                                                          call(data, Measurement.PERCENTAGE_ADMITTED),
+                                                          call(data, Measurement.PERCENTAGE_ICU)])
 
     def test_given_no_data_when_calculate_global_incidence_then_zero_returned(self):
-        self.assertEqual(0, calculate_global_incidence({}))
+        self.assertEqual(0, calculate_global_incidence({}, Measurement.ACCUMULATED_INCIDENCE))
 
     def test_given_only_one_ccaa_when_calculate_global_incidence_then_same_value_returned(self):
         ia = 7
@@ -167,7 +179,7 @@ class ReportsUnitTest(unittest.TestCase):
             "Castilla y León": {
                 Measurement.ACCUMULATED_INCIDENCE: ia
             }
-        })
+        }, Measurement.ACCUMULATED_INCIDENCE)
 
         # Round because the operation is returning 6.999999
         self.assertEqual(ia, round(result, 0))
@@ -185,7 +197,7 @@ class ReportsUnitTest(unittest.TestCase):
             ccaa2: {
                 Measurement.ACCUMULATED_INCIDENCE: ia2
             }
-        })
+        }, Measurement.ACCUMULATED_INCIDENCE)
 
 
         population_ccaa1 = CCAA_POPULATION[ccaa1]
@@ -197,9 +209,9 @@ class ReportsUnitTest(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     @patch("helpers.reports.get_report_sentence")
-    @patch("helpers.reports.get_accumulated_impact_sentence")
+    @patch("helpers.reports.get_report_sentence_with_unit")
     def test_given_pcrs_24_data_when_get_territorial_unit_report_then_tweet_with_pcrs24h_returned(self,
-                                                                                                  get_accumulated_impact_sentence_mock,
+                                                                                                  get_report_sentence_with_unit_mock,
                                                                                                   get_report_sentence_mock):
 
         territorial_unit = MagicMock()
@@ -208,8 +220,8 @@ class ReportsUnitTest(unittest.TestCase):
             Measurement.PCRS: MagicMock(),
             Measurement.PCRS_LAST_24H: MagicMock(),
             Measurement.DEATHS: MagicMock(),
-            Measurement.ADMITTED_PEOPLE: MagicMock(),
-            Measurement.ICU_PEOPLE: MagicMock()
+            Measurement.PERCENTAGE_ADMITTED: MagicMock(),
+            Measurement.PERCENTAGE_ICU: MagicMock()
         }
         yesterday_data = MagicMock()
         accumulated_today = MagicMock()
@@ -218,9 +230,9 @@ class ReportsUnitTest(unittest.TestCase):
         deaths = "deaths"
         admitted = "admitted"
         uci = "uci"
-        get_report_sentence_mock.side_effect = [pcrs, pcrs24h, deaths, admitted, uci]
+        get_report_sentence_mock.side_effect = [pcrs, pcrs24h, deaths]
         accumulated_string = "0,21"
-        get_accumulated_impact_sentence_mock.return_value = accumulated_string
+        get_report_sentence_with_unit_mock.side_effect = [accumulated_string, admitted, uci]
 
         expected_tweet = f"{territorial_unit} - {date_header}:\n\n{pcrs}\n{pcrs24h}\n{accumulated_string}" \
                          f"\n\n{deaths}\n\n{admitted}\n{uci}"
@@ -228,29 +240,31 @@ class ReportsUnitTest(unittest.TestCase):
         self.assertEqual(expected_tweet, get_territorial_unit_report(territorial_unit, date_header, today_data,
                                                                      yesterday_data, accumulated_today))
 
-        get_accumulated_impact_sentence_mock.assert_called_once_with("💥 IA 14 días",
-                                                                     today_data.get(Measurement.ACCUMULATED_INCIDENCE),
-                                                                     yesterday_data.get(Measurement.ACCUMULATED_INCIDENCE))
+        get_report_sentence_with_unit_mock.assert_has_calls([call("💥 IA 14 días",
+                                                                   today_data.get(Measurement.ACCUMULATED_INCIDENCE),
+                                                                   yesterday_data.get(Measurement.ACCUMULATED_INCIDENCE),
+                                                                   "/100.000 hab."),
+                                                             call("🚑 Hospitalizados",
+                                                                  today_data.get(Measurement.PERCENTAGE_ADMITTED),
+                                                                  yesterday_data.get(Measurement.PERCENTAGE_ADMITTED), "%"),
+                                                             call("🏥 UCI", today_data.get(Measurement.PERCENTAGE_ICU),
+                                                                  yesterday_data.get(Measurement.PERCENTAGE_ICU), "%")])
 
         get_report_sentence_mock.assert_has_calls([
-            call("💉 PCRs", today_data.get(Measurement.PCRS),
+            call("💉 PCRs/AGs", today_data.get(Measurement.PCRS),
                  yesterday_data.get(Measurement.PCRS),
                  accumulated_today.get(Measurement.PCRS)),
-            call("💉 PCRs 24h", today_data.get(Measurement.PCRS_LAST_24H),
+            call("💉 PCRs/AGs 24h", today_data.get(Measurement.PCRS_LAST_24H),
                  yesterday_data.get(Measurement.PCRS_LAST_24H)),
             call("😢 Muertes", today_data.get(Measurement.DEATHS),
                  yesterday_data.get(Measurement.DEATHS),
-                 accumulated_today.get(Measurement.DEATHS)),
-            call("🚑 Hospitalizados", today_data.get(Measurement.ADMITTED_PEOPLE),
-                 yesterday_data.get(Measurement.ADMITTED_PEOPLE)),
-            call("🏥 UCI", today_data.get(Measurement.ICU_PEOPLE),
-                 yesterday_data.get(Measurement.ICU_PEOPLE))
+                 accumulated_today.get(Measurement.DEATHS))
         ])
 
     @patch("helpers.reports.get_report_sentence")
-    @patch("helpers.reports.get_accumulated_impact_sentence")
+    @patch("helpers.reports.get_report_sentence_with_unit")
     def test_given_no_pcrs_24_data_when_get_territorial_unit_report_then_tweet_without_pcrs24h_returned(self,
-                                                                                                        get_accumulated_impact_sentence_mock,
+                                                                                                        get_report_sentence_with_unit_mock,
                                                                                                         get_report_sentence_mock):
 
         territorial_unit = MagicMock()
@@ -259,8 +273,8 @@ class ReportsUnitTest(unittest.TestCase):
             Measurement.PCRS: MagicMock(),
             Measurement.DEATHS: MagicMock(),
             Measurement.ADMITTED_PEOPLE: MagicMock(),
-            Measurement.ICU_PEOPLE: MagicMock(),
-            Measurement.ACCUMULATED_INCIDENCE: MagicMock()
+            Measurement.PERCENTAGE_ICU: MagicMock(),
+            Measurement.PERCENTAGE_ADMITTED: MagicMock()
         }
         yesterday_data = MagicMock()
         accumulated_today = MagicMock()
@@ -268,9 +282,9 @@ class ReportsUnitTest(unittest.TestCase):
         deaths = "deaths"
         admitted = "admitted"
         uci = "uci"
-        get_report_sentence_mock.side_effect = [pcrs, deaths, admitted, uci]
+        get_report_sentence_mock.side_effect = [pcrs, deaths]
         accumulated_string = "0,21"
-        get_accumulated_impact_sentence_mock.return_value = accumulated_string
+        get_report_sentence_with_unit_mock.side_effect = [accumulated_string, admitted, uci]
 
         expected_tweet = f"{territorial_unit} - {date_header}:\n\n{pcrs}\n{accumulated_string}" \
                          f"\n\n{deaths}\n\n{admitted}\n{uci}"
@@ -278,31 +292,33 @@ class ReportsUnitTest(unittest.TestCase):
         self.assertEqual(expected_tweet, get_territorial_unit_report(territorial_unit, date_header, today_data,
                                                                      yesterday_data, accumulated_today))
 
-        get_accumulated_impact_sentence_mock.assert_called_once_with("💥 IA 14 días",
-                                                                     today_data.get(Measurement.ACCUMULATED_INCIDENCE),
-                                                                     yesterday_data.get(Measurement.ACCUMULATED_INCIDENCE))
+        get_report_sentence_with_unit_mock.assert_has_calls([call("💥 IA 14 días",
+                                                                   today_data.get(Measurement.ACCUMULATED_INCIDENCE),
+                                                                   yesterday_data.get(Measurement.ACCUMULATED_INCIDENCE),
+                                                                   "/100.000 hab."),
+                                                             call("🚑 Hospitalizados",
+                                                                  today_data.get(Measurement.PERCENTAGE_ADMITTED),
+                                                                  yesterday_data.get(Measurement.PERCENTAGE_ADMITTED), "%"),
+                                                             call("🏥 UCI", today_data.get(Measurement.PERCENTAGE_ICU),
+                                                                  yesterday_data.get(Measurement.PERCENTAGE_ICU), "%")])
 
         get_report_sentence_mock.assert_has_calls([
-            call("💉 PCRs", today_data.get(Measurement.PCRS),
+            call("💉 PCRs/AGs", today_data.get(Measurement.PCRS),
                  yesterday_data.get(Measurement.PCRS),
                  accumulated_today.get(Measurement.PCRS)),
             call("😢 Muertes", today_data.get(Measurement.DEATHS),
                  yesterday_data.get(Measurement.DEATHS),
-                 accumulated_today.get(Measurement.DEATHS)),
-            call("🚑 Hospitalizados", today_data.get(Measurement.ADMITTED_PEOPLE),
-                 yesterday_data.get(Measurement.ADMITTED_PEOPLE)),
-            call("🏥 UCI", today_data.get(Measurement.ICU_PEOPLE),
-                 yesterday_data.get(Measurement.ICU_PEOPLE))
+                 accumulated_today.get(Measurement.DEATHS))
         ])
 
     @patch("helpers.reports.get_tendency_emoji", return_value="^ 1")
-    def test_given_data_when_get_accumulated_impact_sentence_then_impact_returned(self, get_tendency_emoji_mock):
+    def test_given_data_when_get_report_sentence_with_unit_then_impact_returned(self, get_tendency_emoji_mock):
         stat = "IA 14 days"
         today_total = 1100.18
         yesterday_total = 80.10
 
-        self.assertEqual("{0}: {1}/100.000 hab. {2}".format(stat, "1.100,18", get_tendency_emoji_mock.return_value),
-                         get_accumulated_impact_sentence(stat, today_total, yesterday_total))
+        self.assertEqual("{0}: {1}%100.000 hab. {2}".format(stat, "1.100,18", get_tendency_emoji_mock.return_value),
+                         get_report_sentence_with_unit(stat, today_total, yesterday_total, "%100.000 hab."))
 
         get_tendency_emoji_mock.assert_called_once_with(today_total, yesterday_total)
 

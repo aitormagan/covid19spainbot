@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from datetime import datetime
+from datetime import datetime, date
 from pandas import DataFrame
 from helpers.ministry_report import SpainCovid19MinistryReport
 from helpers.spain_geography import CCAA_POPULATION
@@ -23,6 +23,14 @@ class SpainCovid19MinistryReportUnitTest(unittest.TestCase):
     def test_given_13_7_when_get_id_then_161_returned(self):
         self.assertEqual(SpainCovid19MinistryReport.get_pdf_id_for_date(datetime(2020, 7, 13)), 161)
 
+    @patch("helpers.ministry_report.DAYS_WITHOUT_REPORT", [date(2020, 12, 8)])
+    def test_given_9_12_and_8_12_without_report_when_get_id_then_267_returned(self):
+        self.assertEqual(SpainCovid19MinistryReport.get_pdf_id_for_date(datetime(2020, 12, 9)), 267)
+
+    @patch("helpers.ministry_report.DAYS_WITHOUT_REPORT", [date(2020, 12, 7), date(2020, 12, 8)])
+    def test_given_9_12_and_7_12_and_8_12_without_report_when_get_id_then_266_returned(self):
+        self.assertEqual(SpainCovid19MinistryReport.get_pdf_id_for_date(datetime(2020, 12, 9)), 266)
+
     @patch("helpers.ministry_report.tabula")
     @patch("helpers.ministry_report.SpainCovid19MinistryReport.get_pdf_id_for_date")
     def test_given_no_data_frame_acceded_when_access_then_tabula_used(self, get_pdf_for_id_mock, tabula_mock):
@@ -38,7 +46,7 @@ class SpainCovid19MinistryReportUnitTest(unittest.TestCase):
         returned_data_frame = report.data_frame
 
         tabula_mock.read_pdf.assert_called_once_with(SpainCovid19MinistryReport.PDF_URL_FORMAT.format(
-            get_pdf_for_id_mock.return_value), pages=str(page), area=area)
+            get_pdf_for_id_mock.return_value), pages=str(page), area=area, pandas_options={'dtype': str})
         get_pdf_for_id_mock.assert_called_once_with(date)
 
         self.assertEqual(valid_data["Col1*"], list(returned_data_frame['Col1']))

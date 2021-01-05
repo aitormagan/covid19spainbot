@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 from helpers.db import Measurement
 from constants import GRAPH_IMAGE_PATH
-from helpers.spain_geography import CCAA_POPULATION
+from helpers.spain_geography import CCAA_POPULATION, CCAA_ADMITTED_BEDS, CCAA_ICU_BEDS
 
 
 def get_report_by_ccaa(date_in_header, ccaas_today, ccaas_yesterday, ccaas_accumulated_today):
@@ -34,17 +34,29 @@ def get_global_data(dict_to_unpack):
             result[key] += dict_to_unpack[ccaa][key] if dict_to_unpack[ccaa][key] else 0
 
     if ia_exists:
-        result[Measurement.ACCUMULATED_INCIDENCE] = calculate_global_incidence(dict_to_unpack)
+        result[Measurement.ACCUMULATED_INCIDENCE] = calculate_global_incidence(dict_to_unpack,
+                                                                               Measurement.ACCUMULATED_INCIDENCE)
+        result[Measurement.PERCENTAGE_ADMITTED] = calculate_global_incidence(dict_to_unpack,
+                                                                             Measurement.PERCENTAGE_ADMITTED)
+        result[Measurement.PERCENTAGE_ICU] = calculate_global_incidence(dict_to_unpack,
+                                                                        Measurement.PERCENTAGE_ICU)
 
     return result
 
 
-def calculate_global_incidence(dict_to_unpack):
+def calculate_global_incidence(dict_to_unpack, measurement):
+
+    population_to_compare = {
+        Measurement.ACCUMULATED_INCIDENCE.value: CCAA_POPULATION,
+        Measurement.PERCENTAGE_ADMITTED.value: CCAA_ADMITTED_BEDS,
+        Measurement.PERCENTAGE_ICU.value: CCAA_ICU_BEDS
+    }[measurement.value]
+
     total_cases = 0
     population = 0
     for ccaa in dict_to_unpack:
-        total_cases += dict_to_unpack[ccaa][Measurement.ACCUMULATED_INCIDENCE] * CCAA_POPULATION[ccaa] / 100000
-        population += CCAA_POPULATION[ccaa]
+        total_cases += dict_to_unpack[ccaa][measurement] * population_to_compare[ccaa] / 100000
+        population += population_to_compare[ccaa]
 
     return total_cases / population * 100000 if population else 0
 
@@ -54,33 +66,34 @@ def get_territorial_unit_report(territorial_unit, header_date, today_data, yeste
     sentences = list()
     sentences.append(f"{territorial_unit} - {header_date}:")
     sentences.append("")
-    sentences.append(get_report_sentence("💉 PCRs", today_data.get(Measurement.PCRS),
+    sentences.append(get_report_sentence("💉 PCRs/AGs", today_data.get(Measurement.PCRS),
                                          yesterday_data.get(Measurement.PCRS),
                                          accumulated_today.get(Measurement.PCRS)))
 
     if Measurement.PCRS_LAST_24H in today_data:
-        sentences.append(get_report_sentence("💉 PCRs 24h", today_data.get(Measurement.PCRS_LAST_24H),
+        sentences.append(get_report_sentence("💉 PCRs/AGs 24h", today_data.get(Measurement.PCRS_LAST_24H),
                                              yesterday_data.get(Measurement.PCRS_LAST_24H)))
 
-    sentences.append(get_accumulated_impact_sentence("💥 IA 14 días",
-                                                     today_data.get(Measurement.ACCUMULATED_INCIDENCE),
-                                                     yesterday_data.get(Measurement.ACCUMULATED_INCIDENCE)))
+    sentences.append(get_report_sentence_with_unit("💥 IA 14 días",
+                                                 today_data.get(Measurement.ACCUMULATED_INCIDENCE),
+                                                 yesterday_data.get(Measurement.ACCUMULATED_INCIDENCE),
+                                                 "/100.000 hab."))
     sentences.append("")
     sentences.append(get_report_sentence("😢 Muertes", today_data.get(Measurement.DEATHS),
                                          yesterday_data.get(Measurement.DEATHS),
                                          accumulated_today.get(Measurement.DEATHS)))
     sentences.append("")
-    sentences.append(get_report_sentence("🚑 Hospitalizados", today_data.get(Measurement.ADMITTED_PEOPLE),
-                                         yesterday_data.get(Measurement.ADMITTED_PEOPLE)))
-    sentences.append(get_report_sentence("🏥 UCI", today_data.get(Measurement.ICU_PEOPLE),
-                                         yesterday_data.get(Measurement.ICU_PEOPLE)))
+    sentences.append(get_report_sentence_with_unit("🚑 Hospitalizados", today_data.get(Measurement.PERCENTAGE_ADMITTED),
+                                                   yesterday_data.get(Measurement.PERCENTAGE_ADMITTED), "%"))
+    sentences.append(get_report_sentence_with_unit("🏥 UCI", today_data.get(Measurement.PERCENTAGE_ICU),
+                                                   yesterday_data.get(Measurement.PERCENTAGE_ICU), "%"))
 
     return "\n".join(sentences)
 
 
-def get_accumulated_impact_sentence(stat, today_total, yesterday_total):
+def get_report_sentence_with_unit(stat, today_total, yesterday_total, units):
     formatted_number = _format_number(today_total)
-    return "{0}: {1}/100.000 hab. {2}".format(stat, formatted_number, get_tendency_emoji(today_total, yesterday_total))
+    return "{0}: {1}{2} {3}".format(stat, formatted_number, units, get_tendency_emoji(today_total, yesterday_total))
 
 
 def get_report_sentence(stat, today_total, yesterday_total, accumulated=None):

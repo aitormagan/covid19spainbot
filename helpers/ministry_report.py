@@ -1,4 +1,5 @@
 from datetime import datetime
+from constants import DAYS_WITHOUT_REPORT
 import math
 import tabula
 
@@ -17,9 +18,10 @@ class SpainCovid19MinistryReport:
     @property
     def data_frame(self):
         if self._data_frame is None:
+            col2str = {'dtype': str}
             data_frames = tabula.read_pdf(self.PDF_URL_FORMAT.format(self.get_pdf_id_for_date(self._date)),
-                                          pages=str(self._page), area=self._area)
-            self._data_frame = list(filter(lambda x: len(x) >= 22, data_frames))[0]
+                                          pages=str(self._page), area=self._area, pandas_options=col2str)
+            self._data_frame = list(filter(lambda x: len(x) >= 19, data_frames))[0]
 
             for column in self._data_frame:
                 self._data_frame[column.replace('*', '').strip()] = self._data_frame.pop(column)
@@ -34,16 +36,23 @@ class SpainCovid19MinistryReport:
         initial_weekend_without_report = datetime(2020, 7, 4)
         weekends = math.ceil((date - initial_weekend_without_report).days / 7) \
             if date > initial_weekend_without_report else 0
-        return 105 + (date - reference_date).days - weekends * 2
+        pdf_id = 105 + (date - reference_date).days - weekends * 2
+
+        for day_without_report in DAYS_WITHOUT_REPORT:
+            if date.date() > day_without_report:
+                pdf_id -= 1
+
+        return pdf_id
 
     def get_column_data(self, column, part=0, cast=int):
-        ccaas_column = self.data_frame['Unnamed: 0'].astype(str)
+        first_column = self.data_frame.columns[0]
+        ccaas_column = self.data_frame[first_column].astype(str)
         first_ccaa_position = ccaas_column.loc[ccaas_column.str.startswith('Andalucía', na=False)].index[0]
 
         cases = {}
         for i in range(first_ccaa_position, first_ccaa_position + 19):
-            ccaa = self.data_frame['Unnamed: 0'][i].replace('*', '')
-            value = self.data_frame[self.data_frame.columns[column]][i].split(' ')[part].replace('.', '').replace('-', '0').replace(',', '.')
+            ccaa = self.data_frame[first_column][i].replace('*', '')
+            value = self.data_frame[self.data_frame.columns[column]][i].split(' ')[part].replace('.', '').replace('-', '0').replace(',', '.').replace('%', '')
 
             cases[ccaa] = cast(value)
 
