@@ -5,6 +5,26 @@ from constants import GRAPH_IMAGE_PATH
 from helpers.spain_geography import CCAA_POPULATION, CCAA_ADMITTED_BEDS, CCAA_ICU_BEDS
 
 
+def get_vaccination_report(accumulated_data, today_data, yesterday_data):
+    sentences = []
+    for ccaa in accumulated_data:
+        sentences.append(get_vaccination_sentence(ccaa, accumulated_data[ccaa], today_data[ccaa], yesterday_data[ccaa]))
+
+    sentences.append("")
+    sentences.append(get_vaccination_sentence("🇪🇸 España", sum(accumulated_data.values()),
+                                              sum(today_data.values()), sum(yesterday_data.values())))
+    return sentences
+
+
+def get_vaccination_sentence(territorial_unit, accumulated, today_total, yesterday_total):
+    population = CCAA_POPULATION[territorial_unit] if territorial_unit in CCAA_POPULATION else sum(
+        CCAA_POPULATION.values())
+    percentage_population = accumulated / population * 100
+    return "- {0}: {1} {2} ({3}%)".format(territorial_unit, _format_number(accumulated),
+                                          get_tendency_emoji(today_total, yesterday_total),
+                                          _format_number(percentage_population))
+
+
 def get_report_by_ccaa(date_in_header, ccaas_today, ccaas_yesterday, ccaas_accumulated_today):
     tweets = []
     for ccaa in sorted(ccaas_today.keys()):
@@ -85,8 +105,6 @@ def get_territorial_unit_report(territorial_unit, header_date, today_data, yeste
                                                    yesterday_data.get(Measurement.PERCENTAGE_ADMITTED), "%"))
     sentences.append(get_report_sentence_with_unit("🏥 UCI", today_data.get(Measurement.PERCENTAGE_ICU),
                                                    yesterday_data.get(Measurement.PERCENTAGE_ICU), "%"))
-    sentences.append("")
-    sentences.append(get_vaccinations_sentence(territorial_unit, accumulated_today.get(Measurement.VACCINATIONS)))
 
     return "\n".join(sentences)
 
@@ -117,14 +135,6 @@ def get_tendency_emoji(today_number, yesterday_number):
         result = '🔙'
 
     return result
-
-
-def get_vaccinations_sentence(territorial_unit, vaccinated_amount):
-    population = CCAA_POPULATION[territorial_unit] if territorial_unit in CCAA_POPULATION else sum(CCAA_POPULATION.values())
-    percentage_population = vaccinated_amount / population * 100
-    percentage_str = "{0:.2f}".format(percentage_population).replace(".", ",")
-    vaccinated_str = "{0:,}".format(vaccinated_amount).replace(",", ".")
-    return "💉 Tot. Vacunados: {0} ({1}%)".format(vaccinated_str, percentage_str)
 
 
 def get_graph_url(start=None, end=None, additional_vars=None):

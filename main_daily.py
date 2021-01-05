@@ -5,7 +5,6 @@ from urllib.error import HTTPError
 from helpers.twitter import Twitter
 from helpers.db import Influx, Measurement
 from helpers.ministry_report import SpainCovid19MinistryReport
-from helpers.vaccination_report import SpainVaccinationReport
 from helpers.reports import get_report_by_ccaa, get_graph_url, get_global_report
 from constants import DAYS_WITHOUT_REPORT
 
@@ -23,11 +22,10 @@ def main():
     if not data:
         try:
             update_database(today)
-            update_vaccinations(today)
             publish_report(today, yesterday)
 
         except HTTPError:
-            logging.info("PDF is not availble yet...")
+            logging.info("PDF is not available yet...")
         except Exception as e:
             logging.exception("Unhandled exception while trying to publish tweets")
             dm_text = f"There was an unhandled exception. Trace:\n\n{str(e)}"[0:280]
@@ -76,16 +74,6 @@ def update_database(today):
     influx.insert_stats(Measurement.ACCUMULATED_INCIDENCE, today, accumulated_incidence)
     influx.insert_stats(Measurement.PERCENTAGE_ADMITTED, today, today_percentage_admitted)
     influx.insert_stats(Measurement.PERCENTAGE_ICU, today, today_percentage_icu)
-
-
-def update_vaccinations(today):
-    try:
-        vaccination_report = SpainVaccinationReport()
-        accumulated_vaccinations = vaccination_report.get_vaccination_by_ccaa()
-        update_stat(Measurement.VACCINATIONS, accumulated_vaccinations, today)
-    except Exception as e:
-        logging.exception("Unhandled exception while trying to update vaccinations")
-        twitter.send_dm("Error updating vaccinations")
 
 
 def _get_hospitals_report(date):
