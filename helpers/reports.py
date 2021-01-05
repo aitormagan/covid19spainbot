@@ -13,6 +13,8 @@ def get_vaccination_report(accumulated_data, today_data, yesterday_data):
     sentences.append("")
     sentences.append(get_vaccination_sentence("🇪🇸 España", sum(accumulated_data.values()),
                                               sum(today_data.values()), sum(yesterday_data.values())))
+    sentences.append("")
+    sentences.append("* Porcentajes sobre población total de CCAA")
     return sentences
 
 
