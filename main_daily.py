@@ -5,6 +5,7 @@ from urllib.error import HTTPError
 from helpers.twitter import Twitter
 from helpers.db import Influx, Measurement
 from helpers.ministry_report import SpainCovid19MinistryReport
+from helpers.vaccination_report import SpainVaccinationReport
 from helpers.reports import get_report_by_ccaa, get_graph_url, get_global_report
 from constants import DAYS_WITHOUT_REPORT
 
@@ -48,6 +49,7 @@ def update_database(today):
     pcrs_report = SpainCovid19MinistryReport(today, 1)
     deaths_report = SpainCovid19MinistryReport(today, 5, (142, 539, 142+343, 539+265))
     hospital_report = _get_hospitals_report(today)
+    vaccination_report = SpainVaccinationReport()
 
     try:
         accumulated_pcrs_today = pcrs_report.get_column_data(1)
@@ -64,11 +66,13 @@ def update_database(today):
     today_percentage_icu = hospital_report.get_column_data(9, cast=float)
     today_pcrs_last_24h = pcrs_report.get_column_data(2)
     accumulated_incidence = pcrs_report.get_column_data(3, 1, float)
+    accumulated_vaccinations = vaccination_report.get_vaccination_by_ccaa()
 
     update_stat(Measurement.PCRS, accumulated_pcrs_today, today)
     update_stat(Measurement.DEATHS, accumulated_deaths_today, today)
     update_stat(Measurement.ADMITTED_PEOPLE, accumulated_admitted_today, today)
     update_stat(Measurement.ICU_PEOPLE, accumulated_icu_today, today)
+    update_stat(Measurement.VACCINATIONS, accumulated_vaccinations, today)
 
     influx.insert_stats(Measurement.PCRS_LAST_24H, today, today_pcrs_last_24h)
     influx.insert_stats(Measurement.ACCUMULATED_INCIDENCE, today, accumulated_incidence)
@@ -138,7 +142,9 @@ def get_final_tweet():
     items = ["¡Accede a los gráficos interactivos!",
              "",
              "Evolución ➡️ https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1",
-             "Comparación ➡️ https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1"]
+             "Comparación ➡️ https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1"
+             "",
+             "* Porcentaje vacunados sobre población total"]
 
     return "\n".join(list(filter(lambda x: x is not None, items)))
 

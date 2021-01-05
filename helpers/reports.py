@@ -66,27 +66,27 @@ def get_territorial_unit_report(territorial_unit, header_date, today_data, yeste
     sentences = list()
     sentences.append(f"{territorial_unit} - {header_date}:")
     sentences.append("")
-    sentences.append(get_report_sentence("💉 PCRs/AGs", today_data.get(Measurement.PCRS),
-                                         yesterday_data.get(Measurement.PCRS),
+    sentences.append(get_report_sentence("🧪 PCRs", today_data.get(Measurement.PCRS), None,
                                          accumulated_today.get(Measurement.PCRS)))
 
     if Measurement.PCRS_LAST_24H in today_data:
-        sentences.append(get_report_sentence("💉 PCRs/AGs 24h", today_data.get(Measurement.PCRS_LAST_24H),
+        sentences.append(get_report_sentence("🧪 PCRs 24h", today_data.get(Measurement.PCRS_LAST_24H),
                                              yesterday_data.get(Measurement.PCRS_LAST_24H)))
 
-    sentences.append(get_report_sentence_with_unit("💥 IA 14 días",
+    sentences.append(get_report_sentence_with_unit("💥 IA",
                                                  today_data.get(Measurement.ACCUMULATED_INCIDENCE),
                                                  yesterday_data.get(Measurement.ACCUMULATED_INCIDENCE),
                                                  "/100.000 hab."))
     sentences.append("")
-    sentences.append(get_report_sentence("😢 Muertes", today_data.get(Measurement.DEATHS),
-                                         yesterday_data.get(Measurement.DEATHS),
+    sentences.append(get_report_sentence("😢 Muertes", today_data.get(Measurement.DEATHS), None,
                                          accumulated_today.get(Measurement.DEATHS)))
     sentences.append("")
     sentences.append(get_report_sentence_with_unit("🚑 Hospitalizados", today_data.get(Measurement.PERCENTAGE_ADMITTED),
                                                    yesterday_data.get(Measurement.PERCENTAGE_ADMITTED), "%"))
     sentences.append(get_report_sentence_with_unit("🏥 UCI", today_data.get(Measurement.PERCENTAGE_ICU),
                                                    yesterday_data.get(Measurement.PERCENTAGE_ICU), "%"))
+    sentences.append("")
+    sentences.append(get_vaccinations_sentence(territorial_unit, accumulated_today.get(Measurement.VACCINATIONS)))
 
     return "\n".join(sentences)
 
@@ -117,6 +117,14 @@ def get_tendency_emoji(today_number, yesterday_number):
         result = '🔙'
 
     return result
+
+
+def get_vaccinations_sentence(territorial_unit, vaccinated_amount):
+    population = CCAA_POPULATION[territorial_unit] if territorial_unit in CCAA_POPULATION else sum(CCAA_POPULATION.values())
+    percentage_population = vaccinated_amount / population * 100
+    percentage_str = "{0:.2f}".format(percentage_population).replace(".", ",")
+    vaccinated_str = "{0:,}".format(vaccinated_amount).replace(",", ".")
+    return "💉 Vacunados: {0} ({1}%)".format(vaccinated_str, percentage_str)
 
 
 def get_graph_url(start=None, end=None, additional_vars=None):
