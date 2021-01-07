@@ -129,3 +129,71 @@ class TwitterUnitTest(unittest.TestCase):
         requests_mock.get.assert_called_once_with(url)
         file.write.assert_has_calls([call(chunk1), call(chunk2)])
         file.flush.assert_called_once_with()
+
+    def test_when_publish_sentences_in_tweets_then_split_and_publish(self):
+        twitter = Twitter()
+        twitter._split_tweets = MagicMock()
+        twitter.publish_tweets = MagicMock()
+        sentences = MagicMock()
+        header = MagicMock()
+
+        twitter.publish_sentences_in_tweets(sentences, header)
+
+        twitter._split_tweets.assert_called_once_with(sentences, header)
+        twitter.publish_tweets.assert_called_once_with(twitter._split_tweets.return_value)
+
+    def test_given_one_short_sentence_without_header_when_split_tweets_then_one_tweet_returned(self):
+
+        sentence = "this is a shot sentence"
+        sentences = [sentence]
+        twitter = Twitter()
+
+        result = twitter._split_tweets(sentences, None)
+
+        self.assertEqual(sentences, result)
+
+    def test_given_one_short_sentence_with_header_when_split_tweets_then_sentence_with_header_returned(self):
+
+        sentence = "this is a shot sentence"
+        header = "this is a header"
+        sentences = [sentence]
+        twitter = Twitter()
+
+        result = twitter._split_tweets(sentences, header)
+
+        self.assertEqual([header + " (1/1):\n\n" + sentence], result)
+
+    def test_given_sentences_with_length_below_280_with_header_when_split_tweets_then_one_tweet_returned(self):
+        sentence1 = "this is a shot sentence"
+        sentence2 = "this is another sentence"
+        header = "this is a header"
+        sentences = [sentence1, sentence2]
+        twitter = Twitter()
+
+        result = twitter._split_tweets(sentences, header)
+
+        self.assertEqual([header + " (1/1):\n\n" + sentence1 + "\n" + sentence2], result)
+
+    def test_given_sentences_with_length_above_280_with_header_when_split_tweets_then_two_tweet_returned(self):
+        sentence = "this is a shot sentence"
+        header = "this is a header"
+        sentences = 20 * [sentence]
+        twitter = Twitter()
+
+        result = twitter._split_tweets(sentences, header)
+
+        self.assertEqual(2, len(result))
+        self.assertTrue(result[0].startswith(header + " (1/2):\n\n"))
+        self.assertTrue(result[1].startswith(header + " (2/2):\n\n"))
+
+    def test_no_emoji_in_text_when_get_tweet_length_then_normal_length_returned(self):
+        twitter = Twitter()
+        sentence = "this is a test"
+
+        self.assertEqual(len(sentence), twitter._get_tweet_length(sentence))
+
+    def test_one_emoji_in_text_when_get_tweet_length_then_length_plus_1_returned(self):
+        twitter = Twitter()
+        sentence = "this is a test 🔺"
+
+        self.assertEqual(len(sentence) + 1, twitter._get_tweet_length(sentence))
