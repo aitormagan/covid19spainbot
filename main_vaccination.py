@@ -38,10 +38,9 @@ def update_vaccinations(today):
 
 def publish_report(today, yesterday):
     today_data = influx.get_stat_group_by_day(Measurement.VACCINATIONS, today)
-    yesterday_data = influx.get_stat_group_by_day(Measurement.VACCINATIONS, yesterday)
     accumulated_data = influx.get_stat_accumulated_until_day(Measurement.VACCINATIONS, today)
 
-    sentences = get_vaccination_report(accumulated_data, today_data, yesterday_data)
+    sentences = get_vaccination_report(accumulated_data, today_data)
     today_str = today.strftime("%d/%m/%Y")
     twitter.publish_sentences_in_tweets(sentences, f"💉 Total Vacunados a {today_str}")
 

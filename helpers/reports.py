@@ -5,26 +5,26 @@ from constants import GRAPH_IMAGE_PATH
 from helpers.spain_geography import CCAA_POPULATION, CCAA_ADMITTED_BEDS, CCAA_ICU_BEDS
 
 
-def get_vaccination_report(accumulated_data, today_data, yesterday_data):
+def get_vaccination_report(accumulated_data, today_data):
     sentences = []
     for ccaa in accumulated_data:
-        sentences.append(get_vaccination_sentence(ccaa, accumulated_data[ccaa], today_data[ccaa], yesterday_data[ccaa]))
+        sentences.append(get_vaccination_sentence(ccaa, accumulated_data[ccaa], today_data[ccaa]))
 
     sentences.append("")
     sentences.append(get_vaccination_sentence("🇪🇸 España", sum(accumulated_data.values()),
-                                              sum(today_data.values()), sum(yesterday_data.values())))
+                                              sum(today_data.values())))
     sentences.append("")
     sentences.append("* Porcentajes sobre población total de CCAA")
     return sentences
 
 
-def get_vaccination_sentence(territorial_unit, accumulated, today_total, yesterday_total):
-    population = CCAA_POPULATION[territorial_unit] if territorial_unit in CCAA_POPULATION else sum(
-        CCAA_POPULATION.values())
+def get_vaccination_sentence(territorial_unit, accumulated, today_total):
+    population = CCAA_POPULATION[territorial_unit] if territorial_unit in CCAA_POPULATION \
+        else sum(CCAA_POPULATION.values())
     percentage_population = accumulated / population * 100
-    return "- {0}: {1} {2} ({3}%)".format(territorial_unit, _format_number(accumulated),
-                                          get_tendency_emoji(today_total, yesterday_total),
-                                          _format_number(percentage_population))
+    return "- {0}: {1} ({2}%) 🔺{3}".format(territorial_unit, _format_number(accumulated),
+                                           _format_number(percentage_population),
+                                           _format_number(today_total))
 
 
 def get_report_by_ccaa(date_in_header, ccaas_today, ccaas_yesterday, ccaas_accumulated_today):
@@ -96,9 +96,9 @@ def get_territorial_unit_report(territorial_unit, header_date, today_data, yeste
                                              yesterday_data.get(Measurement.PCRS_LAST_24H)))
 
     sentences.append(get_report_sentence_with_unit("💥 IA",
-                                                 today_data.get(Measurement.ACCUMULATED_INCIDENCE),
-                                                 yesterday_data.get(Measurement.ACCUMULATED_INCIDENCE),
-                                                 "/100.000 hab."))
+                                                   today_data.get(Measurement.ACCUMULATED_INCIDENCE),
+                                                   yesterday_data.get(Measurement.ACCUMULATED_INCIDENCE),
+                                                   "/100.000 hab."))
     sentences.append("")
     sentences.append(get_report_sentence("😢 Muertes", today_data.get(Measurement.DEATHS), None,
                                          accumulated_today.get(Measurement.DEATHS)))
