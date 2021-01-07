@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch, call, MagicMock
 from helpers.reports import get_tendency_emoji, get_report_sentence, get_report_by_ccaa, get_graph_url, \
     get_global_report, get_global_data, get_territorial_unit_report, get_report_sentence_with_unit, \
-    calculate_global_incidence
+    calculate_global_incidence, get_vaccination_sentence, get_vaccination_report
 from helpers.db import Measurement
 from helpers.spain_geography import CCAA_POPULATION
 from constants import GRAPH_IMAGE_PATH
@@ -422,3 +422,48 @@ class ReportsUnitTest(unittest.TestCase):
                          "&to=" + str(int(date2.strftime("%s")) * 1000) +
                          f"&var-{var1_name}={var1_value}&var-{var2_name}={var2_value}",
                          get_graph_url(date1, date2, {var1_name: var1_value, var2_name: var2_value}))
+
+    @patch("helpers.reports.get_vaccination_sentence")
+    def test_given_ccaas_whehn_get_vaccination_report_then_sentences_returned(self, get_vaccination_sentence_mock):
+        ccaa1 = "Madrid"
+        ccaa2 = "CLM"
+        accumulated1 = 5000
+        accumulated2 = 2000
+        today_data1 = 200
+        today_data2 = 300
+
+        accumulated_data = {
+            ccaa1: accumulated1,
+            ccaa2: accumulated2
+        }
+
+        today_data = {
+            ccaa1: today_data1,
+            ccaa2: today_data2
+        }
+
+        sentence1 = "sentence1"
+        sentence2 = "sentence2"
+        sentence3 = "sentence3"
+        get_vaccination_sentence_mock.side_effect = [sentence1, sentence2, sentence3]
+
+        sentences = get_vaccination_report(accumulated_data, today_data)
+
+        get_vaccination_sentence_mock.assert_has_calls([
+            call(ccaa1, accumulated1, today_data1),
+            call(ccaa2, accumulated2, today_data2),
+            call("🇪🇸 España", accumulated1 + accumulated2, today_data1 + today_data2)
+        ])
+
+        self.assertEqual([sentence1, sentence2, "", sentence3, "",
+                          "* Porcentajes sobre población total de CCAA"], sentences)
+
+
+
+    @patch("helpers.reports.CCAA_POPULATION", {"Madrid": 8000000, "Cataluña": 10000000})
+    def test_given_existing_ccaa_when_get_vaccination_sentence_then_ccaa_population_used(self):
+        self.assertEqual("- Madrid: 2.000 (0,03%) 🔺500", get_vaccination_sentence("Madrid", 2000, 500))
+
+    @patch("helpers.reports.CCAA_POPULATION", {"Madrid": 8000000, "Cataluña": 10000000})
+    def test_given_non_existing_ccaa_when_get_vaccination_sentence_then_whole_population_used(self):
+        self.assertEqual("- España: 2.000 (0,01%) 🔺700", get_vaccination_sentence("España", 2000, 700))
