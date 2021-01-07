@@ -3,26 +3,16 @@ from datetime import datetime
 from constants import DAYS_WITHOUT_REPORT
 import math
 import tabula
+from abc import ABC, abstractmethod
 
 
-class ReportType(Enum):
-    CASES = 0
-    VACCINES = 1
+class GenericMinistryReport(ABC):
 
-
-class SpainCovid19MinistryReport:
-
-    PDF_URL_FORMAT = "https://www.mscbs.gob.es/en/profesionales/saludPublica/ccayes/alertasActual/nCov-China/" \
-                     "documentos/Actualizacion_{0}_COVID-19.pdf"
-    VACCINES_URL_FORMAT = "https://www.mscbs.gob.es/profesionales/saludPublica/ccayes/alertasActual/nCov/documentos/" \
-                          "Informe_GIV_comunicacion_{0}.pdf"
-
-    def __init__(self, date, page, area=None, report_type=ReportType.CASES):
+    def __init__(self, date, page, area=None):
         self._date = date
         self._page = page
         self._area = area
         self._data_frame = None
-        self._type = report_type
 
     @property
     def data_frame(self):
@@ -37,28 +27,9 @@ class SpainCovid19MinistryReport:
 
         return self._data_frame
 
+    @abstractmethod
     def _get_url(self):
-        if self._type == ReportType.VACCINES:
-            date_str = self._date.strftime("%Y%m%d")
-            return self.VACCINES_URL_FORMAT.format(date_str)
-        else:
-            return self.PDF_URL_FORMAT.format(self.get_pdf_id_for_date(self._date))
-
-    @staticmethod
-    def get_pdf_id_for_date(date):
-        # 14/5/2020 -> id: 105
-        # Starting on 4/7/2020, Spanish Public Health Ministry does not publish reports at weekends.
-        reference_date = datetime(2020, 5, 14)
-        initial_weekend_without_report = datetime(2020, 7, 4)
-        weekends = math.ceil((date - initial_weekend_without_report).days / 7) \
-            if date > initial_weekend_without_report else 0
-        pdf_id = 105 + (date - reference_date).days - weekends * 2
-
-        for day_without_report in DAYS_WITHOUT_REPORT:
-            if date.date() > day_without_report:
-                pdf_id -= 1
-
-        return pdf_id
+        pass
 
     def get_column_data(self, column, part=0, cast=int):
         first_column = self.data_frame.columns[0]
@@ -73,3 +44,38 @@ class SpainCovid19MinistryReport:
             cases[ccaa] = cast(value)
 
         return cases
+
+
+class SpainCovid19MinistryReport(GenericMinistryReport):
+
+    PDF_URL_FORMAT = "https://www.mscbs.gob.es/en/profesionales/saludPublica/ccayes/alertasActual/nCov-China/" \
+                     "documentos/Actualizacion_{0}_COVID-19.pdf"
+
+    def _get_url(self):
+        return self.PDF_URL_FORMAT.format(self.get_cases_pdf_id_for_date(self._date))
+
+    @staticmethod
+    def get_cases_pdf_id_for_date(date):
+        # 14/5/2020 -> id: 105
+        # Starting on 4/7/2020, Spanish Public Health Ministry does not publish reports at weekends.
+        reference_date = datetime(2020, 5, 14)
+        initial_weekend_without_report = datetime(2020, 7, 4)
+        weekends = math.ceil((date - initial_weekend_without_report).days / 7) \
+            if date > initial_weekend_without_report else 0
+        pdf_id = 105 + (date - reference_date).days - weekends * 2
+
+        for day_without_report in DAYS_WITHOUT_REPORT:
+            if date.date() > day_without_report:
+                pdf_id -= 1
+
+        return pdf_id
+
+
+class VaccinesMinistryReport(GenericMinistryReport):
+
+    VACCINES_URL_FORMAT = "https://www.mscbs.gob.es/profesionales/saludPublica/ccayes/alertasActual/nCov/documentos/" \
+                          "Informe_GIV_comunicacion_{0}.pdf"
+
+    def _get_url(self):
+        date_str = self._date.strftime("%Y%m%d")
+        return self.VACCINES_URL_FORMAT.format(date_str)

@@ -3,7 +3,7 @@ from datetime import datetime
 from urllib.error import HTTPError
 from helpers.twitter import Twitter
 from helpers.db import Influx, Measurement
-from helpers.ministry_report import SpainCovid19MinistryReport, ReportType
+from helpers.ministry_report import VaccinesMinistryReport
 from main_daily import update_stat, subtract_days_ignoring_weekends
 from helpers.reports import get_vaccination_report
 
@@ -31,7 +31,7 @@ def main():
 
 
 def update_vaccinations(today):
-    vaccination_report = SpainCovid19MinistryReport(datetime.now(), 3, report_type=ReportType.VACCINES)
+    vaccination_report = VaccinesMinistryReport(datetime.now(), 3)
     accumulated_vaccinations = vaccination_report.get_column_data(2)
     update_stat(Measurement.VACCINATIONS, accumulated_vaccinations, today)
 
