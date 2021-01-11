@@ -78,7 +78,7 @@ def update_database(today):
 
 def _get_hospitals_report(date):
     try:
-        hospital_report = SpainCovid19MinistryReport(date, 3, (160, 33, 160 + 250, 33 + 790))
+        hospital_report = SpainCovid19MinistryReport(date, 3, (160, 33, 160 + 260, 33 + 790))
         hospital_report.get_column_data(1)
     except:
         hospital_report = SpainCovid19MinistryReport(date, 3, (150, 33, 150 + 250, 33 + 790))
