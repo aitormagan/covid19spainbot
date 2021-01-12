@@ -1,13 +1,12 @@
+from enum import Enum
 from datetime import datetime
 from constants import DAYS_WITHOUT_REPORT
 import math
 import tabula
+from abc import ABC, abstractmethod
 
 
-class SpainCovid19MinistryReport:
-
-    PDF_URL_FORMAT = "https://www.mscbs.gob.es/en/profesionales/saludPublica/ccayes/alertasActual/nCov-China/" \
-                     "documentos/Actualizacion_{0}_COVID-19.pdf"
+class GenericMinistryReport(ABC):
 
     def __init__(self, date, page, area=None):
         self._date = date
@@ -19,8 +18,8 @@ class SpainCovid19MinistryReport:
     def data_frame(self):
         if self._data_frame is None:
             col2str = {'dtype': str}
-            data_frames = tabula.read_pdf(self.PDF_URL_FORMAT.format(self.get_pdf_id_for_date(self._date)),
-                                          pages=str(self._page), area=self._area, pandas_options=col2str)
+            data_frames = tabula.read_pdf(self._get_url(), pages=str(self._page), area=self._area,
+                                          pandas_options=col2str)
             self._data_frame = list(filter(lambda x: len(x) >= 19, data_frames))[0]
 
             for column in self._data_frame:
@@ -28,8 +27,35 @@ class SpainCovid19MinistryReport:
 
         return self._data_frame
 
+    @abstractmethod
+    def _get_url(self):
+        pass
+
+    def get_column_data(self, column, part=0, cast=int):
+        first_column = self.data_frame.columns[0]
+        ccaas_column = self.data_frame[first_column].astype(str)
+        first_ccaa_position = ccaas_column.loc[ccaas_column.str.startswith('Andalucía', na=False)].index[0]
+
+        cases = {}
+        for i in range(first_ccaa_position, first_ccaa_position + 19):
+            ccaa = self.data_frame[first_column][i].replace('*', '').replace('(', '').replace(')', '').replace('Leon', 'León').strip()
+            value = self.data_frame[self.data_frame.columns[column]][i].split(' ')[part].replace('.', '').replace('-', '0').replace(',', '.').replace('%', '')
+
+            cases[ccaa] = cast(value)
+
+        return cases
+
+
+class SpainCovid19MinistryReport(GenericMinistryReport):
+
+    PDF_URL_FORMAT = "https://www.mscbs.gob.es/en/profesionales/saludPublica/ccayes/alertasActual/nCov-China/" \
+                     "documentos/Actualizacion_{0}_COVID-19.pdf"
+
+    def _get_url(self):
+        return self.PDF_URL_FORMAT.format(self.get_cases_pdf_id_for_date(self._date))
+
     @staticmethod
-    def get_pdf_id_for_date(date):
+    def get_cases_pdf_id_for_date(date):
         # 14/5/2020 -> id: 105
         # Starting on 4/7/2020, Spanish Public Health Ministry does not publish reports at weekends.
         reference_date = datetime(2020, 5, 14)
@@ -44,16 +70,12 @@ class SpainCovid19MinistryReport:
 
         return pdf_id
 
-    def get_column_data(self, column, part=0, cast=int):
-        first_column = self.data_frame.columns[0]
-        ccaas_column = self.data_frame[first_column].astype(str)
-        first_ccaa_position = ccaas_column.loc[ccaas_column.str.startswith('Andalucía', na=False)].index[0]
 
-        cases = {}
-        for i in range(first_ccaa_position, first_ccaa_position + 19):
-            ccaa = self.data_frame[first_column][i].replace('*', '')
-            value = self.data_frame[self.data_frame.columns[column]][i].split(' ')[part].replace('.', '').replace('-', '0').replace(',', '.').replace('%', '')
+class VaccinesMinistryReport(GenericMinistryReport):
 
-            cases[ccaa] = cast(value)
+    VACCINES_URL_FORMAT = "https://www.mscbs.gob.es/profesionales/saludPublica/ccayes/alertasActual/nCov/documentos/" \
+                          "Informe_GIV_comunicacion_{0}.pdf"
 
-        return cases
+    def _get_url(self):
+        date_str = self._date.strftime("%Y%m%d")
+        return self.VACCINES_URL_FORMAT.format(date_str)

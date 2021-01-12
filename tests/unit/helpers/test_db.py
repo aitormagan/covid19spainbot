@@ -106,7 +106,10 @@ class InfluxUnitTest(unittest.TestCase):
                                                        call(Measurement.PCRS_LAST_24H, date),
                                                        call(Measurement.ADMITTED_PEOPLE, date),
                                                        call(Measurement.ICU_PEOPLE, date),
-                                                       call(Measurement.ACCUMULATED_INCIDENCE, date)])
+                                                       call(Measurement.ACCUMULATED_INCIDENCE, date),
+                                                       call(Measurement.PERCENTAGE_ADMITTED, date),
+                                                       call(Measurement.PERCENTAGE_ICU, date),
+                                                       call(Measurement.VACCINATIONS, date)])
 
     def test_when_get_all_stats_group_by_week_then_three_value_returned(self):
         influx = Influx()
@@ -123,7 +126,8 @@ class InfluxUnitTest(unittest.TestCase):
                                                         call(Measurement.DEATHS, date),
                                                         call(Measurement.PCRS_LAST_24H, date),
                                                         call(Measurement.ADMITTED_PEOPLE, date),
-                                                        call(Measurement.ICU_PEOPLE, date)])
+                                                        call(Measurement.ICU_PEOPLE, date),
+                                                        call(Measurement.VACCINATIONS, date)])
         influx.get_stat_group_by_day.assert_has_calls([call(Measurement.ACCUMULATED_INCIDENCE, datetime(2020, 10, 9)),
                                                        call(Measurement.PERCENTAGE_ADMITTED, datetime(2020, 10, 9)),
                                                        call(Measurement.PERCENTAGE_ICU, datetime(2020, 10, 9))])
@@ -131,7 +135,10 @@ class InfluxUnitTest(unittest.TestCase):
     def test_when_get_all_stats_accumulated_until_day_then_two_value_returned(self):
         influx = Influx()
         influx._pack_elements = MagicMock()
-        influx.get_stat_accumulated_until_day = MagicMock()
+        pcrs = MagicMock()
+        deaths = MagicMock()
+        vaccinations = MagicMock()
+        influx.get_stat_accumulated_until_day = MagicMock(side_effect=[pcrs, deaths, vaccinations])
         date = MagicMock()
 
         result = influx.get_all_stats_accumulated_until_day(date)
@@ -139,7 +146,9 @@ class InfluxUnitTest(unittest.TestCase):
         self.assertEqual(influx._pack_elements.return_value, result)
 
         influx.get_stat_accumulated_until_day.assert_has_calls([call(Measurement.PCRS, date),
-                                                                call(Measurement.DEATHS, date)])
+                                                                call(Measurement.DEATHS, date),
+                                                                call(Measurement.VACCINATIONS, date)])
+        influx._pack_elements.assert_called_once_with(pcrs=pcrs, deaths=deaths, vaccinations=vaccinations)
 
     def test_given_no_args_when_pack_elements_then_empty_dict_returned(self):
 

@@ -25,7 +25,7 @@ def main():
             publish_report(today, yesterday)
 
         except HTTPError:
-            logging.info("PDF is not availble yet...")
+            logging.info("PDF is not available yet...")
         except Exception as e:
             logging.exception("Unhandled exception while trying to publish tweets")
             dm_text = f"There was an unhandled exception. Trace:\n\n{str(e)}"[0:280]
@@ -78,7 +78,7 @@ def update_database(today):
 
 def _get_hospitals_report(date):
     try:
-        hospital_report = SpainCovid19MinistryReport(date, 3, (160, 33, 160 + 250, 33 + 790))
+        hospital_report = SpainCovid19MinistryReport(date, 3, (160, 33, 160 + 260, 33 + 790))
         hospital_report.get_column_data(1)
     except:
         hospital_report = SpainCovid19MinistryReport(date, 3, (150, 33, 150 + 250, 33 + 790))

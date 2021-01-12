@@ -3,8 +3,12 @@
 [![Build Status](https://github.com/aitormagan/covid19spainbot/workflows/Python%20Tests/badge.svg)](https://github.com//aitormagan/covid19spainbot/actions)
 [![Coverage Status](https://coveralls.io/repos/github/aitormagan/covid19spainbot/badge.svg?branch=master)](https://coveralls.io/github/aitormagan/covid19spainbot?branch=master)
 
-Script que publica en Twitter los nuevos PCR+ y fallecimientos provocados por el SARS-CoV-2 en España y disgregado por
-las diferentes comunidades autónomas.
+Script que publica en Twitter las siguientes estadísticas relacionadas con el SARS-CoV-2:
+* PCR+ y PCR+ en las últimas 24 horas
+* Fallecimientos 
+* IA 14 días
+* % Hospitalizados 
+* % UCI
 
 A diferencia de los datos del ministerio, que únicamente da las PCR+ que se ejecutaron y obtuvieron resultado el día 
 anterior, este script comprueba la diferencia de datos entre el reporte del día actual y el anterior, para notificar el 
@@ -17,16 +21,18 @@ Links:
 
 ## Ejecución
 
-El repositorio cuenta con dos scripts: 
+El repositorio cuenta con tres scripts: 
 
 * `main_daily`: debe lanzarse de lunes a viernes en intervalos de 5 minutos. Comprueba si se ha publicado el nuevo 
-informe y en caso positivo actualiza la BBDD y publica los tweets.
+informe de casos/fallecimientos/hospitalizaciones y en caso positivo actualiza la BBDD y publica los tweets.
+* `main_vaccination`: debe lanzarse de lunes a viernes en intervalos de 5 minutos. Comprueba si se ha publicado el nuevo 
+informe de vacunación y en caso positivo actualiza la BBDD y publica los tweets.
 * `main_weekly`: debe lanzarse una única vez los domingos para publicar las estadísticas semanales. 
 
 Para planificar la ejecución de ambos scripts puedes hacer uso de `cron`. En concreto, estas son las expresiones que 
 se están usando para cada uno de los scripts:
 
-* `main_daily`: `*/5 16-21 * * 1-5` (cada 5 minutos de 16 a 21h de lunes a viernes)
+* `main_daily` y `main_vaccination`: `*/5 16-21 * * 1-5` (cada 5 minutos de 16 a 21.55h de lunes a viernes)
 * `main_weekly`: `0 18 * * 0` (los domingos a las 18.00h)
 
 Ten en cuenta que deben definirse ciertas variables de entorno para lanzar los scripts:

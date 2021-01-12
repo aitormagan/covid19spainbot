@@ -2,3 +2,4 @@ tweepy
 tabula-py
 influxdb
 requests
+pyexcel-ods

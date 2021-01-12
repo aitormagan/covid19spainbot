@@ -36,9 +36,9 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with nosetests
       run: |
-        nosetests --with-coverage --cover-xml --cover-inclusive --cover-package=helpers,main_daily,main_weekly
+        nosetests --with-coverage --cover-xml --cover-inclusive --cover-package=helpers,main_daily,main_weekly,main_vaccination
     - name: Coveralls
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        coveralls
+        coveralls --service=github
