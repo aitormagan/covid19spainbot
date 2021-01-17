@@ -111,6 +111,7 @@ def get_territorial_unit_report(territorial_unit, header_date, today_data, yeste
                                                    yesterday_data.get(Measurement.PERCENTAGE_ICU), "%"))
 
     # PCRs last 24 hour is not present in Weekly info.
+    # Vaccines info cannot be shown in daily reports because info. is not updated at the same time.
     if Measurement.PCRS_LAST_24H not in today_data:
         sentences.append("")
         sentences.append(get_report_sentence("💉 Vacunados", today_data.get(Measurement.VACCINATIONS),
