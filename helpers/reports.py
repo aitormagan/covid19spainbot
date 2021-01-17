@@ -88,7 +88,8 @@ def get_territorial_unit_report(territorial_unit, header_date, today_data, yeste
     sentences = list()
     sentences.append(f"{territorial_unit} - {header_date}:")
     sentences.append("")
-    sentences.append(get_report_sentence("🧪 PCRs", today_data.get(Measurement.PCRS), None,
+    sentences.append(get_report_sentence("🧪 PCRs", today_data.get(Measurement.PCRS),
+                                         yesterday_data.get(Measurement.PCRS),
                                          accumulated_today.get(Measurement.PCRS)))
 
     if Measurement.PCRS_LAST_24H in today_data:
@@ -100,13 +101,21 @@ def get_territorial_unit_report(territorial_unit, header_date, today_data, yeste
                                                    yesterday_data.get(Measurement.ACCUMULATED_INCIDENCE),
                                                    "/100.000 hab."))
     sentences.append("")
-    sentences.append(get_report_sentence("😢 Muertes", today_data.get(Measurement.DEATHS), None,
+    sentences.append(get_report_sentence("😢 Muertes", today_data.get(Measurement.DEATHS),
+                                         yesterday_data.get(Measurement.DEATHS),
                                          accumulated_today.get(Measurement.DEATHS)))
     sentences.append("")
     sentences.append(get_report_sentence_with_unit("🚑 Hospitalizados", today_data.get(Measurement.PERCENTAGE_ADMITTED),
                                                    yesterday_data.get(Measurement.PERCENTAGE_ADMITTED), "%"))
     sentences.append(get_report_sentence_with_unit("🏥 UCI", today_data.get(Measurement.PERCENTAGE_ICU),
                                                    yesterday_data.get(Measurement.PERCENTAGE_ICU), "%"))
+
+    # PCRs last 24 hour is not present in Weekly info.
+    if Measurement.PCRS_LAST_24H not in today_data:
+        sentences.append("")
+        sentences.append(get_report_sentence("💉 Vacunados", today_data.get(Measurement.VACCINATIONS),
+                                             yesterday_data.get(Measurement.VACCINATIONS),
+                                             accumulated_today.get(Measurement.VACCINATIONS)))
 
     return "\n".join(sentences)
 
@@ -117,7 +126,7 @@ def get_report_sentence_with_unit(stat, today_total, yesterday_total, units):
 
 
 def get_report_sentence(stat, today_total, yesterday_total, accumulated=None):
-    total_sentence = "(Totales: {0:,})".format(accumulated).replace(",", ".") if accumulated else ""
+    total_sentence = "(Tot.: {0:,})".format(accumulated).replace(",", ".") if accumulated else ""
     sentence = "{0}: {1} {2} {3}".format(stat, "{0:+,}".format(today_total).replace(",", "."),
                                          get_tendency_emoji(today_total, yesterday_total),
                                          total_sentence).strip()

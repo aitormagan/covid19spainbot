@@ -252,12 +252,12 @@ class ReportsUnitTest(unittest.TestCase):
 
         get_report_sentence_mock.assert_has_calls([
             call("🧪 PCRs", today_data.get(Measurement.PCRS),
-                 None,
+                 yesterday_data.get(Measurement.PCRS),
                  accumulated_today.get(Measurement.PCRS)),
             call("🧪 PCRs 24h", today_data.get(Measurement.PCRS_LAST_24H),
                  yesterday_data.get(Measurement.PCRS_LAST_24H)),
             call("😢 Muertes", today_data.get(Measurement.DEATHS),
-                 None,
+                 yesterday_data.get(Measurement.DEATHS),
                  accumulated_today.get(Measurement.DEATHS))
         ])
 
@@ -274,7 +274,8 @@ class ReportsUnitTest(unittest.TestCase):
             Measurement.DEATHS: MagicMock(),
             Measurement.ADMITTED_PEOPLE: MagicMock(),
             Measurement.PERCENTAGE_ICU: MagicMock(),
-            Measurement.PERCENTAGE_ADMITTED: MagicMock()
+            Measurement.PERCENTAGE_ADMITTED: MagicMock(),
+            Measurement.VACCINATIONS: MagicMock()
         }
         yesterday_data = MagicMock()
         accumulated_today = MagicMock()
@@ -282,20 +283,21 @@ class ReportsUnitTest(unittest.TestCase):
         deaths = "deaths"
         admitted = "admitted"
         uci = "uci"
-        get_report_sentence_mock.side_effect = [pcrs, deaths]
+        vaccinations = "vaccinations"
+        get_report_sentence_mock.side_effect = [pcrs, deaths, vaccinations]
         accumulated_string = "0,21"
         get_report_sentence_with_unit_mock.side_effect = [accumulated_string, admitted, uci]
 
         expected_tweet = f"{territorial_unit} - {date_header}:\n\n{pcrs}\n{accumulated_string}" \
-                         f"\n\n{deaths}\n\n{admitted}\n{uci}"
+                         f"\n\n{deaths}\n\n{admitted}\n{uci}\n\n{vaccinations}"
 
         self.assertEqual(expected_tweet, get_territorial_unit_report(territorial_unit, date_header, today_data,
                                                                      yesterday_data, accumulated_today))
 
         get_report_sentence_with_unit_mock.assert_has_calls([call("💥 IA",
-                                                                   today_data.get(Measurement.ACCUMULATED_INCIDENCE),
-                                                                   yesterday_data.get(Measurement.ACCUMULATED_INCIDENCE),
-                                                                   "/100.000 hab."),
+                                                                  today_data.get(Measurement.ACCUMULATED_INCIDENCE),
+                                                                  yesterday_data.get(Measurement.ACCUMULATED_INCIDENCE),
+                                                                  "/100.000 hab."),
                                                              call("🚑 Hospitalizados",
                                                                   today_data.get(Measurement.PERCENTAGE_ADMITTED),
                                                                   yesterday_data.get(Measurement.PERCENTAGE_ADMITTED), "%"),
@@ -304,11 +306,14 @@ class ReportsUnitTest(unittest.TestCase):
 
         get_report_sentence_mock.assert_has_calls([
             call("🧪 PCRs", today_data.get(Measurement.PCRS),
-                 None,
+                 yesterday_data.get(Measurement.PCRS),
                  accumulated_today.get(Measurement.PCRS)),
             call("😢 Muertes", today_data.get(Measurement.DEATHS),
-                 None,
-                 accumulated_today.get(Measurement.DEATHS))
+                 yesterday_data.get(Measurement.DEATHS),
+                 accumulated_today.get(Measurement.DEATHS)),
+            call("💉 Vacunados", today_data.get(Measurement.VACCINATIONS),
+                 yesterday_data.get(Measurement.VACCINATIONS),
+                 accumulated_today.get(Measurement.VACCINATIONS))
         ])
 
     @patch("helpers.reports.get_tendency_emoji", return_value="^ 1")
@@ -330,7 +335,7 @@ class ReportsUnitTest(unittest.TestCase):
         today_accumulated = 8000
         result = get_report_sentence(stat, today_value, yesterday_value, today_accumulated)
 
-        self.assertEqual("{0}: +1.000 {1} (Totales: 8.000)".format(stat, get_tendency_emoji_mock.return_value), result)
+        self.assertEqual("{0}: +1.000 {1} (Tot.: 8.000)".format(stat, get_tendency_emoji_mock.return_value), result)
 
         get_tendency_emoji_mock.assert_called_once_with(today_value, yesterday_value)
 
