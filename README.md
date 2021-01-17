@@ -9,6 +9,7 @@ Script que publica en Twitter las siguientes estadísticas relacionadas con el S
 * IA 14 días
 * % Hospitalizados 
 * % UCI
+* Vacunaciones
 
 A diferencia de los datos del ministerio, que únicamente da las PCR+ que se ejecutaron y obtuvieron resultado el día 
 anterior, este script comprueba la diferencia de datos entre el reporte del día actual y el anterior, para notificar el 
