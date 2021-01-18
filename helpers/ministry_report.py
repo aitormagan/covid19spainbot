@@ -38,7 +38,7 @@ class GenericMinistryReport(ABC):
 
         cases = {}
         for i in range(first_ccaa_position, first_ccaa_position + 19):
-            ccaa = self.data_frame[first_column][i].replace('*', '').replace('(', '').replace(')', '').replace('Leon', 'León').strip()
+            ccaa = self.data_frame[first_column][i].replace('*', '').replace('(', '').replace(')', '').replace('Leon', 'León').strip().replace('\r', ' ')
             value = self.data_frame[self.data_frame.columns[column]][i].split(' ')[part].replace('.', '').replace('-', '0').replace(',', '.').replace('%', '')
 
             cases[ccaa] = cast(value)
