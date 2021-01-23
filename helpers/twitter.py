@@ -57,9 +57,9 @@ class Twitter:
         else:
             raise MediaNotAccessibleError("File could not be downloaded")
 
-    def publish_sentences_in_tweets(self, sentences, header=None):
+    def publish_sentences_in_tweets(self, sentences, header=None, last_tweet=None):
         tweets = self._split_tweets(sentences, header)
-        self.publish_tweets(tweets)
+        return self.publish_tweets(tweets, last_tweet=last_tweet)
 
     def _split_tweets(self, sentences, header=None):
         tweets = []

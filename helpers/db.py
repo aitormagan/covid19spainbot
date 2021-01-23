@@ -15,6 +15,7 @@ class Measurement(Enum):
     PERCENTAGE_ADMITTED = "percentage_admitted"
     PERCENTAGE_ICU = "percentage_icu"
     VACCINATIONS = "vaccinations"
+    COMPLETED_VACCINATIONS = "completed_vaccinations"
 
 
 class Influx:
@@ -86,6 +87,7 @@ class Influx:
         percentage_admitted = self.get_stat_group_by_day(Measurement.PERCENTAGE_ADMITTED, week_friday)
         percentage_icu = self.get_stat_group_by_day(Measurement.PERCENTAGE_ICU, week_friday)
         vaccinations = self.get_stat_group_by_week(Measurement.VACCINATIONS, day)
+        completed_vaccinations = self.get_stat_group_by_week(Measurement.COMPLETED_VACCINATIONS, day)
 
         return self._pack_elements(**{
             Measurement.PCRS.value: pcrs,
@@ -96,7 +98,8 @@ class Influx:
             Measurement.ACCUMULATED_INCIDENCE.value: accumulated_incidence,
             Measurement.PERCENTAGE_ICU.value: percentage_icu,
             Measurement.PERCENTAGE_ADMITTED.value: percentage_admitted,
-            Measurement.VACCINATIONS.value: vaccinations
+            Measurement.VACCINATIONS.value: vaccinations,
+            Measurement.COMPLETED_VACCINATIONS.value: completed_vaccinations
         })
 
     def get_all_stats_group_by_day(self, day):
@@ -109,6 +112,7 @@ class Influx:
         percentage_admitted = self.get_stat_group_by_day(Measurement.PERCENTAGE_ADMITTED, day)
         percentage_icu = self.get_stat_group_by_day(Measurement.PERCENTAGE_ICU, day)
         vaccinations = self.get_stat_group_by_day(Measurement.VACCINATIONS, day)
+        completed_vaccinations = self.get_stat_group_by_day(Measurement.COMPLETED_VACCINATIONS, day)
 
         return self._pack_elements(**{
             Measurement.PCRS.value: pcrs,
@@ -119,18 +123,21 @@ class Influx:
             Measurement.ACCUMULATED_INCIDENCE.value: accumulated_incidence,
             Measurement.PERCENTAGE_ADMITTED.value: percentage_admitted,
             Measurement.PERCENTAGE_ICU.value: percentage_icu,
-            Measurement.VACCINATIONS.value: vaccinations
+            Measurement.VACCINATIONS.value: vaccinations,
+            Measurement.COMPLETED_VACCINATIONS.value: completed_vaccinations
         })
 
     def get_all_stats_accumulated_until_day(self, day):
         pcrs = self.get_stat_accumulated_until_day(Measurement.PCRS, day)
         deaths = self.get_stat_accumulated_until_day(Measurement.DEATHS, day)
         vaccinations = self.get_stat_accumulated_until_day(Measurement.VACCINATIONS, day)
+        completed_vaccinations = self.get_stat_accumulated_until_day(Measurement.COMPLETED_VACCINATIONS, day)
 
         return self._pack_elements(**{
             Measurement.PCRS.value: pcrs,
             Measurement.DEATHS.value: deaths,
-            Measurement.VACCINATIONS.value: vaccinations
+            Measurement.VACCINATIONS.value: vaccinations,
+            Measurement.COMPLETED_VACCINATIONS.value: completed_vaccinations
         })
 
     @staticmethod

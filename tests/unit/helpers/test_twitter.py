@@ -136,11 +136,13 @@ class TwitterUnitTest(unittest.TestCase):
         twitter.publish_tweets = MagicMock()
         sentences = MagicMock()
         header = MagicMock()
+        last_tweet = MagicMock()
 
-        twitter.publish_sentences_in_tweets(sentences, header)
+        result = twitter.publish_sentences_in_tweets(sentences, header, last_tweet)
 
+        self.assertEqual(twitter.publish_tweets.return_value, result)
         twitter._split_tweets.assert_called_once_with(sentences, header)
-        twitter.publish_tweets.assert_called_once_with(twitter._split_tweets.return_value)
+        twitter.publish_tweets.assert_called_once_with(twitter._split_tweets.return_value, last_tweet=last_tweet)
 
     def test_given_one_short_sentence_without_header_when_split_tweets_then_one_tweet_returned(self):
 

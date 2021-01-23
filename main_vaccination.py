@@ -33,16 +33,28 @@ def main():
 def update_vaccinations(today):
     vaccination_report = VaccinesMinistryReport(today, 3)
     accumulated_vaccinations = vaccination_report.get_column_data(4)
+    accumulated_completed_vaccinations = vaccination_report.get_column_data(6)
     update_stat(Measurement.VACCINATIONS, accumulated_vaccinations, today)
+    update_stat(Measurement.COMPLETED_VACCINATIONS, accumulated_completed_vaccinations, today)
 
 
 def publish_report(today, yesterday):
-    today_data = influx.get_stat_group_by_day(Measurement.VACCINATIONS, today)
-    accumulated_data = influx.get_stat_accumulated_until_day(Measurement.VACCINATIONS, today)
+    today_vaccinations = influx.get_stat_group_by_day(Measurement.VACCINATIONS, today)
+    today_completed_vaccinations = influx.get_stat_group_by_day(Measurement.COMPLETED_VACCINATIONS, today)
+    accumulated_vaccinations = influx.get_stat_accumulated_until_day(Measurement.VACCINATIONS, today)
+    accumulated_completed_vaccinations = influx.get_stat_accumulated_until_day(Measurement.COMPLETED_VACCINATIONS,
+                                                                               today)
 
-    sentences = get_vaccination_report(accumulated_data, today_data)
     today_str = today.strftime("%d/%m/%Y")
-    twitter.publish_sentences_in_tweets(sentences, f"💉 Total Vacunados a {today_str}")
+    sentences_vaccination = get_vaccination_report(accumulated_vaccinations, today_vaccinations, False)
+    last_tweet = twitter.publish_sentences_in_tweets(sentences_vaccination, f"💉 Total Dosis a {today_str}")
+
+    sentences_completed_vaccination = get_vaccination_report(accumulated_completed_vaccinations,
+                                                             today_completed_vaccinations, True)
+    sentences_completed_vaccination.append("")
+    sentences_completed_vaccination.append("* Porcentajes sobre población total de CCAA")
+    twitter.publish_sentences_in_tweets(sentences_completed_vaccination, f"💉 Total Pautas Completas a {today_str}",
+                                        last_tweet=last_tweet)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock, call, ANY
 from main_vaccination import main, Measurement, HTTPError, update_vaccinations, publish_report
 
 
-class MainDailyUnitTest(unittest.TestCase):
+class MainVaccinationUnitTest(unittest.TestCase):
 
     @patch("main_vaccination.subtract_days_ignoring_weekends")
     @patch("main_vaccination.update_vaccinations")
@@ -105,14 +105,20 @@ class MainDailyUnitTest(unittest.TestCase):
                                                                                vaccines_ministry_report_mock):
 
         today = MagicMock()
+        vaccinations = MagicMock()
+        completed_vaccinations = MagicMock()
+        vaccines_ministry_report_mock.return_value.get_column_data.side_effect = [vaccinations, completed_vaccinations]
 
         update_vaccinations(today)
 
         vaccines_ministry_report_mock.assert_called_once_with(today, 3)
-        vaccines_ministry_report_mock.return_value.get_column_data.assert_called_once_with(4)
-        update_stat_mock.assert_called_once_with(Measurement.VACCINATIONS,
-                                                 vaccines_ministry_report_mock.return_value.get_column_data.return_value,
-                                                 today)
+        vaccines_ministry_report_mock.return_value.get_column_data.assert_has_calls([call(4), call(6)])
+        update_stat_mock.assert_has_calls([call(Measurement.VACCINATIONS,
+                                                vaccinations,
+                                                today),
+                                           call(Measurement.COMPLETED_VACCINATIONS,
+                                                completed_vaccinations,
+                                                today)])
 
     @patch("main_vaccination.influx")
     @patch("main_vaccination.twitter")
@@ -123,13 +129,31 @@ class MainDailyUnitTest(unittest.TestCase):
         date_str = "04/05/2006"
         today = MagicMock()
         today.strftime.return_value = date_str
+        vaccinations = MagicMock()
+        completed_vaccinations = MagicMock()
+        accumulated_vaccinations = MagicMock()
+        accumulated_completed_vaccinations = MagicMock()
+        influx_mock.get_stat_group_by_day.side_effect = [vaccinations, completed_vaccinations]
+        influx_mock.get_stat_accumulated_until_day.side_effect = [accumulated_vaccinations,
+                                                                  accumulated_completed_vaccinations]
+        sentence1 = MagicMock()
+        sentence2 = MagicMock()
+        get_vaccination_report_mock.side_effect = [[sentence1], [sentence2]]
+        last_tweet = MagicMock()
+        twitter_mock.publish_sentences_in_tweets.return_value = last_tweet
 
         publish_report(today, MagicMock())
 
-        influx_mock.get_stat_group_by_day.assert_called_once_with(Measurement.VACCINATIONS, today)
-        influx_mock.get_stat_accumulated_until_day.assert_called_once_with(Measurement.VACCINATIONS, today)
-        get_vaccination_report_mock.assert_called_once_with(influx_mock.get_stat_accumulated_until_day.return_value,
-                                                            influx_mock.get_stat_group_by_day.return_value)
-        twitter_mock.publish_sentences_in_tweets.assert_called_once_with(get_vaccination_report_mock.return_value,
-                                                                         f"💉 Total Vacunados a {date_str}")
+        influx_mock.get_stat_group_by_day.assert_has_calls([call(Measurement.VACCINATIONS, today),
+                                                            call(Measurement.COMPLETED_VACCINATIONS, today)])
+        influx_mock.get_stat_accumulated_until_day.assert_has_calls([call(Measurement.VACCINATIONS, today),
+                                                                     call(Measurement.COMPLETED_VACCINATIONS, today)])
+        get_vaccination_report_mock.assert_has_calls([call(accumulated_vaccinations, vaccinations, False),
+                                                      call(accumulated_completed_vaccinations, completed_vaccinations,
+                                                           True)])
+        twitter_mock.publish_sentences_in_tweets.assert_has_calls([call([sentence1], f"💉 Total Dosis a {date_str}"),
+                                                                   call([sentence2, "",
+                                                                         "* Porcentajes sobre población total de CCAA"],
+                                                                        f"💉 Total Pautas Completas a {date_str}",
+                                                                        last_tweet=last_tweet)])
         today.strftime.assert_called_once_with("%d/%m/%Y")

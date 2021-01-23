@@ -5,20 +5,28 @@ from constants import GRAPH_IMAGE_PATH
 from helpers.spain_geography import CCAA_POPULATION, CCAA_ADMITTED_BEDS, CCAA_ICU_BEDS
 
 
-def get_vaccination_report(accumulated_data, today_data):
+def get_vaccination_report(accumulated_data, today_data, percentage=False):
     sentences = []
+    sentence_generator = {
+        True: get_completed_vaccination_sentence,
+        False: get_vaccination_sentence
+    }[percentage]
+
     for ccaa in accumulated_data:
-        sentences.append(get_vaccination_sentence(ccaa, accumulated_data[ccaa], today_data[ccaa]))
+        sentences.append(sentence_generator(ccaa, accumulated_data[ccaa], today_data[ccaa]))
 
     sentences.append("")
-    sentences.append(get_vaccination_sentence("🇪🇸 España", sum(accumulated_data.values()),
-                                              sum(today_data.values())))
-    sentences.append("")
-    sentences.append("* Porcentajes sobre población total de CCAA")
+    sentences.append(sentence_generator("🇪🇸 España", sum(accumulated_data.values()),
+                                        sum(today_data.values())))
     return sentences
 
 
 def get_vaccination_sentence(territorial_unit, accumulated, today_total):
+    return "- {0}: {1} 🔺{2}".format(territorial_unit, _format_number(accumulated),
+                                     _format_number(today_total))
+
+
+def get_completed_vaccination_sentence(territorial_unit, accumulated, today_total):
     population = CCAA_POPULATION[territorial_unit] if territorial_unit in CCAA_POPULATION \
         else sum(CCAA_POPULATION.values())
     percentage_population = accumulated / population * 100
@@ -105,18 +113,22 @@ def get_territorial_unit_report(territorial_unit, header_date, today_data, yeste
                                          yesterday_data.get(Measurement.DEATHS),
                                          accumulated_today.get(Measurement.DEATHS)))
     sentences.append("")
-    sentences.append(get_report_sentence_with_unit("🚑 Hospitalizados", today_data.get(Measurement.PERCENTAGE_ADMITTED),
-                                                   yesterday_data.get(Measurement.PERCENTAGE_ADMITTED), "%"))
-    sentences.append(get_report_sentence_with_unit("🏥 UCI", today_data.get(Measurement.PERCENTAGE_ICU),
-                                                   yesterday_data.get(Measurement.PERCENTAGE_ICU), "%"))
 
     # PCRs last 24 hour is not present in Weekly info.
     # Vaccines info cannot be shown in daily reports because info. is not updated at the same time.
     if Measurement.PCRS_LAST_24H not in today_data:
-        sentences.append("")
-        sentences.append(get_report_sentence("💉 Vacunados", today_data.get(Measurement.VACCINATIONS),
+        sentences.append(get_report_sentence("💉 Dosis", today_data.get(Measurement.VACCINATIONS),
                                              yesterday_data.get(Measurement.VACCINATIONS),
                                              accumulated_today.get(Measurement.VACCINATIONS)))
+        sentences.append(get_report_sentence("💉 Pautas", today_data.get(Measurement.COMPLETED_VACCINATIONS),
+                                             yesterday_data.get(Measurement.COMPLETED_VACCINATIONS),
+                                             accumulated_today.get(Measurement.COMPLETED_VACCINATIONS)))
+    else:
+        sentences.append(
+            get_report_sentence_with_unit("🚑 Hospitalizados", today_data.get(Measurement.PERCENTAGE_ADMITTED),
+                                          yesterday_data.get(Measurement.PERCENTAGE_ADMITTED), "%"))
+        sentences.append(get_report_sentence_with_unit("🏥 UCI", today_data.get(Measurement.PERCENTAGE_ICU),
+                                                       yesterday_data.get(Measurement.PERCENTAGE_ICU), "%"))
 
     return "\n".join(sentences)
 

@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch, call, MagicMock
 from helpers.reports import get_tendency_emoji, get_report_sentence, get_report_by_ccaa, get_graph_url, \
     get_global_report, get_global_data, get_territorial_unit_report, get_report_sentence_with_unit, \
-    calculate_global_incidence, get_vaccination_sentence, get_vaccination_report
+    calculate_global_incidence, get_vaccination_sentence, get_vaccination_report, get_completed_vaccination_sentence
 from helpers.db import Measurement
 from helpers.spain_geography import CCAA_POPULATION
 from constants import GRAPH_IMAGE_PATH
@@ -281,15 +281,14 @@ class ReportsUnitTest(unittest.TestCase):
         accumulated_today = MagicMock()
         pcrs = "pcrs"
         deaths = "deaths"
-        admitted = "admitted"
-        uci = "uci"
         vaccinations = "vaccinations"
-        get_report_sentence_mock.side_effect = [pcrs, deaths, vaccinations]
+        completed_vaccinations = "completed_vaccinations"
+        get_report_sentence_mock.side_effect = [pcrs, deaths, vaccinations, completed_vaccinations]
         accumulated_string = "0,21"
-        get_report_sentence_with_unit_mock.side_effect = [accumulated_string, admitted, uci]
+        get_report_sentence_with_unit_mock.side_effect = [accumulated_string]
 
         expected_tweet = f"{territorial_unit} - {date_header}:\n\n{pcrs}\n{accumulated_string}" \
-                         f"\n\n{deaths}\n\n{admitted}\n{uci}\n\n{vaccinations}"
+                         f"\n\n{deaths}\n\n{vaccinations}\n{completed_vaccinations}"
 
         self.assertEqual(expected_tweet, get_territorial_unit_report(territorial_unit, date_header, today_data,
                                                                      yesterday_data, accumulated_today))
@@ -297,12 +296,7 @@ class ReportsUnitTest(unittest.TestCase):
         get_report_sentence_with_unit_mock.assert_has_calls([call("💥 IA",
                                                                   today_data.get(Measurement.ACCUMULATED_INCIDENCE),
                                                                   yesterday_data.get(Measurement.ACCUMULATED_INCIDENCE),
-                                                                  "/100.000 hab."),
-                                                             call("🚑 Hospitalizados",
-                                                                  today_data.get(Measurement.PERCENTAGE_ADMITTED),
-                                                                  yesterday_data.get(Measurement.PERCENTAGE_ADMITTED), "%"),
-                                                             call("🏥 UCI", today_data.get(Measurement.PERCENTAGE_ICU),
-                                                                  yesterday_data.get(Measurement.PERCENTAGE_ICU), "%")])
+                                                                  "/100.000 hab.")])
 
         get_report_sentence_mock.assert_has_calls([
             call("🧪 PCRs", today_data.get(Measurement.PCRS),
@@ -311,9 +305,12 @@ class ReportsUnitTest(unittest.TestCase):
             call("😢 Muertes", today_data.get(Measurement.DEATHS),
                  yesterday_data.get(Measurement.DEATHS),
                  accumulated_today.get(Measurement.DEATHS)),
-            call("💉 Vacunados", today_data.get(Measurement.VACCINATIONS),
+            call("💉 Dosis", today_data.get(Measurement.VACCINATIONS),
                  yesterday_data.get(Measurement.VACCINATIONS),
-                 accumulated_today.get(Measurement.VACCINATIONS))
+                 accumulated_today.get(Measurement.VACCINATIONS)),
+            call("💉 Pautas", today_data.get(Measurement.COMPLETED_VACCINATIONS),
+                 yesterday_data.get(Measurement.COMPLETED_VACCINATIONS),
+                 accumulated_today.get(Measurement.COMPLETED_VACCINATIONS))
         ])
 
     @patch("helpers.reports.get_tendency_emoji", return_value="^ 1")
@@ -429,7 +426,8 @@ class ReportsUnitTest(unittest.TestCase):
                          get_graph_url(date1, date2, {var1_name: var1_value, var2_name: var2_value}))
 
     @patch("helpers.reports.get_vaccination_sentence")
-    def test_given_ccaas_whehn_get_vaccination_report_then_sentences_returned(self, get_vaccination_sentence_mock):
+    def test_given_no_percentage_when_get_vaccination_report_then_sentences_returned(self,
+                                                                                     get_vaccination_sentence_mock):
         ccaa1 = "Madrid"
         ccaa2 = "CLM"
         accumulated1 = 5000
@@ -452,7 +450,7 @@ class ReportsUnitTest(unittest.TestCase):
         sentence3 = "sentence3"
         get_vaccination_sentence_mock.side_effect = [sentence1, sentence2, sentence3]
 
-        sentences = get_vaccination_report(accumulated_data, today_data)
+        sentences = get_vaccination_report(accumulated_data, today_data, False)
 
         get_vaccination_sentence_mock.assert_has_calls([
             call(ccaa1, accumulated1, today_data1),
@@ -460,15 +458,55 @@ class ReportsUnitTest(unittest.TestCase):
             call("🇪🇸 España", accumulated1 + accumulated2, today_data1 + today_data2)
         ])
 
-        self.assertEqual([sentence1, sentence2, "", sentence3, "",
-                          "* Porcentajes sobre población total de CCAA"], sentences)
+        self.assertEqual([sentence1, sentence2, "", sentence3], sentences)
 
+    @patch("helpers.reports.get_completed_vaccination_sentence")
+    def test_given_percentage_when_get_vaccination_report_then_sentences_returned(self,
+                                                                                  get_completed_vaccination_sentence_mock):
+        ccaa1 = "Madrid"
+        ccaa2 = "CLM"
+        accumulated1 = 5000
+        accumulated2 = 2000
+        today_data1 = 200
+        today_data2 = 300
 
+        accumulated_data = {
+            ccaa1: accumulated1,
+            ccaa2: accumulated2
+        }
+
+        today_data = {
+            ccaa1: today_data1,
+            ccaa2: today_data2
+        }
+
+        sentence1 = "sentence1"
+        sentence2 = "sentence2"
+        sentence3 = "sentence3"
+        get_completed_vaccination_sentence_mock.side_effect = [sentence1, sentence2, sentence3]
+
+        sentences = get_vaccination_report(accumulated_data, today_data, True)
+
+        get_completed_vaccination_sentence_mock.assert_has_calls([
+            call(ccaa1, accumulated1, today_data1),
+            call(ccaa2, accumulated2, today_data2),
+            call("🇪🇸 España", accumulated1 + accumulated2, today_data1 + today_data2)
+        ])
+
+        self.assertEqual([sentence1, sentence2, "", sentence3], sentences)
 
     @patch("helpers.reports.CCAA_POPULATION", {"Madrid": 8000000, "Cataluña": 10000000})
     def test_given_existing_ccaa_when_get_vaccination_sentence_then_ccaa_population_used(self):
-        self.assertEqual("- Madrid: 2.000 (0,03%) 🔺500", get_vaccination_sentence("Madrid", 2000, 500))
+        self.assertEqual("- Madrid: 2.000 🔺500", get_vaccination_sentence("Madrid", 2000, 500))
 
     @patch("helpers.reports.CCAA_POPULATION", {"Madrid": 8000000, "Cataluña": 10000000})
     def test_given_non_existing_ccaa_when_get_vaccination_sentence_then_whole_population_used(self):
-        self.assertEqual("- España: 2.000 (0,01%) 🔺700", get_vaccination_sentence("España", 2000, 700))
+        self.assertEqual("- España: 2.000 🔺700", get_vaccination_sentence("España", 2000, 700))
+
+    @patch("helpers.reports.CCAA_POPULATION", {"Madrid": 8000000, "Cataluña": 10000000})
+    def test_given_existing_ccaa_when_get_completed_vaccination_sentence_then_ccaa_population_used(self):
+        self.assertEqual("- Madrid: 2.000 (0,03%) 🔺500", get_completed_vaccination_sentence("Madrid", 2000, 500))
+
+    @patch("helpers.reports.CCAA_POPULATION", {"Madrid": 8000000, "Cataluña": 10000000})
+    def test_given_non_existing_ccaa_when_get_completed_vaccination_sentence_then_whole_population_used(self):
+        self.assertEqual("- España: 2.000 (0,01%) 🔺700", get_completed_vaccination_sentence("España", 2000, 700))
