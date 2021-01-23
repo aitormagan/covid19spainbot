@@ -138,7 +138,9 @@ class InfluxUnitTest(unittest.TestCase):
         pcrs = MagicMock()
         deaths = MagicMock()
         vaccinations = MagicMock()
-        influx.get_stat_accumulated_until_day = MagicMock(side_effect=[pcrs, deaths, vaccinations])
+        completed_vaccinations = MagicMock()
+        influx.get_stat_accumulated_until_day = MagicMock(side_effect=[pcrs, deaths, vaccinations,
+                                                                       completed_vaccinations])
         date = MagicMock()
 
         result = influx.get_all_stats_accumulated_until_day(date)
@@ -147,8 +149,10 @@ class InfluxUnitTest(unittest.TestCase):
 
         influx.get_stat_accumulated_until_day.assert_has_calls([call(Measurement.PCRS, date),
                                                                 call(Measurement.DEATHS, date),
-                                                                call(Measurement.VACCINATIONS, date)])
-        influx._pack_elements.assert_called_once_with(pcrs=pcrs, deaths=deaths, vaccinations=vaccinations)
+                                                                call(Measurement.VACCINATIONS, date),
+                                                                call(Measurement.COMPLETED_VACCINATIONS, date)])
+        influx._pack_elements.assert_called_once_with(pcrs=pcrs, deaths=deaths, vaccinations=vaccinations,
+                                                      completed_vaccinations=completed_vaccinations)
 
     def test_given_no_args_when_pack_elements_then_empty_dict_returned(self):
 
