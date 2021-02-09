@@ -32,8 +32,8 @@ def main():
 
 def update_vaccinations(today):
     vaccination_report = VaccinesMinistryReport(today, 3)
-    accumulated_vaccinations = vaccination_report.get_column_data(4)
-    accumulated_completed_vaccinations = vaccination_report.get_column_data(6)
+    accumulated_vaccinations = vaccination_report.get_column_data(5)
+    accumulated_completed_vaccinations = vaccination_report.get_column_data(7)
     update_stat(Measurement.VACCINATIONS, accumulated_vaccinations, today)
     update_stat(Measurement.COMPLETED_VACCINATIONS, accumulated_completed_vaccinations, today)
 

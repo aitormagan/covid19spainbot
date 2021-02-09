@@ -112,7 +112,7 @@ class MainVaccinationUnitTest(unittest.TestCase):
         update_vaccinations(today)
 
         vaccines_ministry_report_mock.assert_called_once_with(today, 3)
-        vaccines_ministry_report_mock.return_value.get_column_data.assert_has_calls([call(4), call(6)])
+        vaccines_ministry_report_mock.return_value.get_column_data.assert_has_calls([call(5), call(7)])
         update_stat_mock.assert_has_calls([call(Measurement.VACCINATIONS,
                                                 vaccinations,
                                                 today),
