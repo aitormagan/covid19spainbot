@@ -77,13 +77,15 @@ def update_database(today):
 
 
 def _get_hospitals_report(date):
-    try:
-        hospital_report = SpainCovid19MinistryReport(date, 3, (160, 33, 160 + 260, 33 + 790))
-        hospital_report.get_column_data(7, cast=float)
-    except:
-        hospital_report = SpainCovid19MinistryReport(date, 3, (150, 33, 150 + 250, 33 + 790))
+    for height in [160, 150, 170, 135]:
+        try:
+            hospital_report = SpainCovid19MinistryReport(date, 3, (height, 33, height + 260, 33 + 790))
+            hospital_report.get_column_data(7, cast=float)
+            return hospital_report
+        except:
+            pass
 
-    return hospital_report
+    raise Exception("Impossible to find an appropriate ")
 
 
 def update_stat(stat, accumulated_today, today):
