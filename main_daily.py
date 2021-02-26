@@ -82,6 +82,8 @@ def _get_hospitals_report(date):
             hospital_report = SpainCovid19MinistryReport(date, 3, (height, 33, height + 260, 33 + 790))
             hospital_report.get_column_data(7, cast=float)
             return hospital_report
+        except HTTPError as e:
+            raise e
         except:
             pass
 
