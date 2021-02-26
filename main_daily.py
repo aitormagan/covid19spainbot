@@ -77,14 +77,14 @@ def update_database(today):
 
 
 def _get_hospitals_report(date):
-    for height in [160, 150, 170, 135]:
+    for height in [160, 150, 170, 135, 200]:
         try:
             hospital_report = SpainCovid19MinistryReport(date, 3, (height, 33, height + 260, 33 + 790))
             hospital_report.get_column_data(7, cast=float)
             return hospital_report
         except HTTPError as e:
             raise e
-        except:
+        except Exception as e:
             pass
 
     raise Exception("Impossible to find an appropriate ")
