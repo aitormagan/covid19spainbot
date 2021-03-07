@@ -5,28 +5,27 @@ from constants import GRAPH_IMAGE_PATH
 from helpers.spain_geography import CCAA_POPULATION, CCAA_ADMITTED_BEDS, CCAA_ICU_BEDS
 
 
-def get_vaccination_report(accumulated_data, today_data, percentage=False):
+def get_spain_vaccination_report(accumulated_doses_data, today_doses_data,
+                                 accumulated_completed_vaccination_data, today_completed_vaccination_data):
+
+    tweet = get_vaccination_sentence("Dosis", sum(accumulated_doses_data.values()),
+                                      sum(today_doses_data.values())) + "\n"
+    tweet += get_vaccination_sentence("Pautas", sum(accumulated_completed_vaccination_data.values()),
+                                      sum(today_completed_vaccination_data.values()))
+
+    return tweet
+
+
+def get_vaccination_report(accumulated_data, today_data):
     sentences = []
-    sentence_generator = {
-        True: get_completed_vaccination_sentence,
-        False: get_vaccination_sentence
-    }[percentage]
 
     for ccaa in accumulated_data:
-        sentences.append(sentence_generator(ccaa, accumulated_data[ccaa], today_data[ccaa]))
+        sentences.append(get_vaccination_sentence(ccaa, accumulated_data[ccaa], today_data[ccaa]))
 
-    sentences.append("")
-    sentences.append(sentence_generator("🇪🇸 España", sum(accumulated_data.values()),
-                                        sum(today_data.values())))
     return sentences
 
 
 def get_vaccination_sentence(territorial_unit, accumulated, today_total):
-    return "- {0}: {1} 🔺{2}".format(territorial_unit, _format_number(accumulated),
-                                     _format_number(today_total))
-
-
-def get_completed_vaccination_sentence(territorial_unit, accumulated, today_total):
     population = CCAA_POPULATION[territorial_unit] if territorial_unit in CCAA_POPULATION \
         else sum(CCAA_POPULATION.values())
     percentage_population = accumulated / population * 100
@@ -161,13 +160,13 @@ def get_tendency_emoji(today_number, yesterday_number):
     return result
 
 
-def get_graph_url(start=None, end=None, additional_vars=None):
+def get_graph_url(start=None, end=None, additional_vars=None, graph_path=GRAPH_IMAGE_PATH):
     vars_str = "&" + "&".join([f"var-{k}={v}" for k, v in additional_vars.items()]) if additional_vars else ""
     start_str = f"&from={int(start.strftime('%s')) * 1000}" if start else ""
     end_str = f"&to={int(end.strftime('%s')) * 1000}" if end else ""
     grafana_server = os.environ.get("GRAFANA_SERVER", "http://localhost:3000")
 
-    return os.path.join(grafana_server, GRAPH_IMAGE_PATH) + start_str + end_str + vars_str
+    return os.path.join(grafana_server, graph_path) + start_str + end_str + vars_str
 
 
 def _format_number(number):
