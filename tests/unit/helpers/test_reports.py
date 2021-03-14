@@ -3,7 +3,8 @@ import unittest
 from unittest.mock import patch, call, MagicMock
 from helpers.reports import get_tendency_emoji, get_report_sentence, get_report_by_ccaa, get_graph_url, \
     get_global_report, get_global_data, get_territorial_unit_report, get_report_sentence_with_unit, \
-    calculate_global_incidence, get_vaccination_sentence, get_vaccination_report, get_spain_vaccination_report
+    calculate_global_incidence, get_vaccination_sentence, get_vaccination_report, get_spain_vaccination_report, \
+    get_completed_vaccination_sentence
 from helpers.db import Measurement
 from helpers.spain_geography import CCAA_POPULATION
 from constants import GRAPH_IMAGE_PATH
@@ -426,7 +427,8 @@ class ReportsUnitTest(unittest.TestCase):
                          get_graph_url(date1, date2, {var1_name: var1_value, var2_name: var2_value}))
 
     @patch("helpers.reports.get_vaccination_sentence")
-    def test_when_get_vaccination_report_then_sentences_returned(self, get_vaccination_sentence_mock):
+    def test_given_percentage_False_when_get_vaccination_report_then_get_vaccination_called(self,
+                                                                                            get_vaccination_sentence_mock):
         ccaa1 = "Madrid"
         ccaa2 = "CLM"
         accumulated1 = 5000
@@ -448,7 +450,7 @@ class ReportsUnitTest(unittest.TestCase):
         sentence2 = "sentence2"
         get_vaccination_sentence_mock.side_effect = [sentence1, sentence2]
 
-        sentences = get_vaccination_report(accumulated_data, today_data)
+        sentences = get_vaccination_report(accumulated_data, today_data, False)
 
         get_vaccination_sentence_mock.assert_has_calls([
             call(ccaa1, accumulated1, today_data1),
@@ -457,16 +459,59 @@ class ReportsUnitTest(unittest.TestCase):
 
         self.assertEqual([sentence1, sentence2], sentences)
 
+    @patch("helpers.reports.get_completed_vaccination_sentence")
+    def test_given_percentage_True_when_get_vaccination_report_then_get_completed_vaccination_called(self,
+                                                                                                     get_completed_vaccination_sentence_mock):
+        ccaa1 = "Madrid"
+        ccaa2 = "CLM"
+        accumulated1 = 5000
+        accumulated2 = 2000
+        today_data1 = 200
+        today_data2 = 300
+
+        accumulated_data = {
+            ccaa1: accumulated1,
+            ccaa2: accumulated2
+        }
+
+        today_data = {
+            ccaa1: today_data1,
+            ccaa2: today_data2
+        }
+
+        sentence1 = "sentence1"
+        sentence2 = "sentence2"
+        get_completed_vaccination_sentence_mock.side_effect = [sentence1, sentence2]
+
+        sentences = get_vaccination_report(accumulated_data, today_data, True)
+
+        get_completed_vaccination_sentence_mock.assert_has_calls([
+            call(ccaa1, accumulated1, today_data1),
+            call(ccaa2, accumulated2, today_data2)
+        ])
+
+        self.assertEqual([sentence1, sentence2], sentences)
+
     @patch("helpers.reports.CCAA_POPULATION", {"Madrid": 8000000, "Cataluña": 10000000})
     def test_given_existing_ccaa_when_get_vaccination_sentence_then_ccaa_population_used(self):
-        self.assertEqual("- Madrid: 2.000 (0,03%) 🔺500", get_vaccination_sentence("Madrid", 2000, 500))
+        self.assertEqual("- Madrid: 2.000 🔺500", get_vaccination_sentence("Madrid", 2000, 500))
 
     @patch("helpers.reports.CCAA_POPULATION", {"Madrid": 8000000, "Cataluña": 10000000})
     def test_given_non_existing_ccaa_when_get_vaccination_sentence_then_whole_population_used(self):
-        self.assertEqual("- España: 2.000 (0,01%) 🔺700", get_vaccination_sentence("España", 2000, 700))
+        self.assertEqual("- España: 2.000 🔺700", get_vaccination_sentence("España", 2000, 700))
+
+    @patch("helpers.reports.CCAA_POPULATION", {"Madrid": 8000000, "Cataluña": 10000000})
+    def test_given_existing_ccaa_when_get_completed_vaccination_sentence_then_ccaa_population_used(self):
+        self.assertEqual("- Madrid: 2.000 (0,03%) 🔺500", get_completed_vaccination_sentence("Madrid", 2000, 500))
+
+    @patch("helpers.reports.CCAA_POPULATION", {"Madrid": 8000000, "Cataluña": 10000000})
+    def test_given_non_existing_ccaa_when_get_completed_vaccination_sentence_then_whole_population_used(self):
+        self.assertEqual("- España: 2.000 (0,01%) 🔺700", get_completed_vaccination_sentence("España", 2000, 700))
 
     @patch("helpers.reports.get_vaccination_sentence")
-    def test_when_get_spain_vaccination_report_then_data_aggregated(self, get_vaccination_sentence_mock):
+    @patch("helpers.reports.get_completed_vaccination_sentence")
+    def test_when_get_spain_vaccination_report_then_data_aggregated(self, get_completed_vaccination_sentence_mock,
+                                                                    get_vaccination_sentence_mock):
         ccaa1 = "Madrid"
         ccaa2 = "CLM"
 
@@ -502,14 +547,16 @@ class ReportsUnitTest(unittest.TestCase):
 
         sentence1 = "sentence1"
         sentence2 = "sentence2"
-        get_vaccination_sentence_mock.side_effect = [sentence1, sentence2]
+        get_vaccination_sentence_mock.return_value = sentence1
+        get_completed_vaccination_sentence_mock.return_value = sentence2
 
         sentence = get_spain_vaccination_report(accumulated_doses_data, today_doses_data,
-                                                 accumulated_completed_data, today_completed_data)
+                                                accumulated_completed_data, today_completed_data)
 
-        get_vaccination_sentence_mock.assert_has_calls([
-            call("Dosis", accumulated_doses_1 + accumulated_doses_2, today_doses_1 + today_doses_2),
-            call("Pautas", accumulated_completed_1 + accumulated_completed_2, today_completed_1 + today_completed_2)
-        ])
+        get_vaccination_sentence_mock.assert_called_once_with("Dosis", accumulated_doses_1 + accumulated_doses_2,
+                                                              today_doses_1 + today_doses_2)
+        get_completed_vaccination_sentence_mock.assert_called_once_with("Pautas", accumulated_completed_1 +
+                                                                        accumulated_completed_2,
+                                                                        today_completed_1 + today_completed_2)
 
         self.assertEqual(sentence1 + "\n" + sentence2, sentence)

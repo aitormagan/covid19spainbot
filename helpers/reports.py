@@ -10,22 +10,31 @@ def get_spain_vaccination_report(accumulated_doses_data, today_doses_data,
 
     tweet = get_vaccination_sentence("Dosis", sum(accumulated_doses_data.values()),
                                       sum(today_doses_data.values())) + "\n"
-    tweet += get_vaccination_sentence("Pautas", sum(accumulated_completed_vaccination_data.values()),
-                                      sum(today_completed_vaccination_data.values()))
+    tweet += get_completed_vaccination_sentence("Pautas", sum(accumulated_completed_vaccination_data.values()),
+                                                sum(today_completed_vaccination_data.values()))
 
     return tweet
 
 
-def get_vaccination_report(accumulated_data, today_data):
+def get_vaccination_report(accumulated_data, today_data, percentage):
     sentences = []
+    sentence_generator = {
+        True: get_completed_vaccination_sentence,
+        False: get_vaccination_sentence
+    }[percentage]
 
     for ccaa in accumulated_data:
-        sentences.append(get_vaccination_sentence(ccaa, accumulated_data[ccaa], today_data[ccaa]))
+        sentences.append(sentence_generator(ccaa, accumulated_data[ccaa], today_data[ccaa]))
 
     return sentences
 
 
 def get_vaccination_sentence(territorial_unit, accumulated, today_total):
+    return "- {0}: {1} 🔺{2}".format(territorial_unit, _format_number(accumulated),
+                                     _format_number(today_total))
+
+
+def get_completed_vaccination_sentence(territorial_unit, accumulated, today_total):
     population = CCAA_POPULATION[territorial_unit] if territorial_unit in CCAA_POPULATION \
         else sum(CCAA_POPULATION.values())
     percentage_population = accumulated / population * 100

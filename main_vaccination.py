@@ -53,12 +53,12 @@ def publish_report(today):
     graph_url = get_graph_url(datetime(2021, 1, 1), today, graph_path=VACCINE_IMAGE_PATH)
     last_tweet = twitter.publish_tweet_with_media(spain_tweet, graph_url)
 
-    sentences_vaccination = get_vaccination_report(accumulated_vaccinations, today_vaccinations)
+    sentences_vaccination = get_vaccination_report(accumulated_vaccinations, today_vaccinations, False)
     last_tweet = twitter.publish_sentences_in_tweets(sentences_vaccination, f"💉 Total Dosis a {today_str}",
                                                     last_tweet=last_tweet)
 
     sentences_completed_vaccination = get_vaccination_report(accumulated_completed_vaccinations,
-                                                             today_completed_vaccinations)
+                                                             today_completed_vaccinations, True)
     twitter.publish_sentences_in_tweets(sentences_completed_vaccination, f"💉 Total Pautas Completas a {today_str}",
                                        last_tweet=last_tweet)
 

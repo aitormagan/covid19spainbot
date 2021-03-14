@@ -143,8 +143,8 @@ class MainVaccinationUnitTest(unittest.TestCase):
                                                             call(Measurement.COMPLETED_VACCINATIONS, today)])
         influx_mock.get_stat_accumulated_until_day.assert_has_calls([call(Measurement.VACCINATIONS, today),
                                                                      call(Measurement.COMPLETED_VACCINATIONS, today)])
-        get_vaccination_report_mock.assert_has_calls([call(accumulated_vaccinations, vaccinations),
-                                                      call(accumulated_completed_vaccinations, completed_vaccinations)])
+        get_vaccination_report_mock.assert_has_calls([call(accumulated_vaccinations, vaccinations, False),
+                                                      call(accumulated_completed_vaccinations, completed_vaccinations, True)])
         twitter_mock.publish_sentences_in_tweets.assert_has_calls([call([sentence1], f"💉 Total Dosis a {date_str}",
                                                                         last_tweet=first_tweet),
                                                                    call([sentence2],
