@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.error import HTTPError
 from helpers.twitter import Twitter
 from helpers.db import Influx, Measurement
@@ -32,8 +32,8 @@ def main():
 
 def update_vaccinations(today):
     vaccination_report = VaccinesMinistryReport(today, 3)
-    accumulated_vaccinations = vaccination_report.get_column_data(5)
-    accumulated_completed_vaccinations = vaccination_report.get_column_data(7)
+    accumulated_vaccinations = vaccination_report.get_column_data(4, num_rows=20)
+    accumulated_completed_vaccinations = vaccination_report.get_column_data(7, num_rows=20)
     update_stat(Measurement.VACCINATIONS, accumulated_vaccinations, today)
     update_stat(Measurement.COMPLETED_VACCINATIONS, accumulated_completed_vaccinations, today)
 
@@ -52,6 +52,12 @@ def publish_report(today):
     spain_tweet = f"🇪🇸 España - Estado vacunación a {today_str}:\n\n{spain_tweet}\n\n{interactive_graph_sentence}"
     graph_url = get_graph_url(datetime(2021, 1, 1), today, graph_path=VACCINE_IMAGE_PATH)
     last_tweet = twitter.publish_tweet_with_media(spain_tweet, graph_url)
+
+    army_string = "Fuerzas Armadas"
+    today_vaccinations.pop(army_string)
+    today_completed_vaccinations.pop(army_string)
+    accumulated_vaccinations.pop(army_string)
+    accumulated_completed_vaccinations.pop(army_string)
 
     sentences_vaccination = get_vaccination_report(accumulated_vaccinations, today_vaccinations, False)
     last_tweet = twitter.publish_sentences_in_tweets(sentences_vaccination, f"💉 Total Dosis a {today_str}",

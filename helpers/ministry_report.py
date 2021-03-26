@@ -31,14 +31,14 @@ class GenericMinistryReport(ABC):
     def _get_url(self):
         pass
 
-    def get_column_data(self, column, part=0, cast=int):
+    def get_column_data(self, column, part=0, cast=int, num_rows=19):
         first_column = self.data_frame.columns[0]
         ccaas_column = self.data_frame[first_column].astype(str)
         first_ccaa_position = ccaas_column.loc[ccaas_column.str.startswith('Andalucía', na=False)].index[0]
 
         cases = {}
-        for i in range(first_ccaa_position, first_ccaa_position + 19):
-            ccaa = self.data_frame[first_column][i].replace('*', '').replace('(', '').replace(')', '').replace('Leon', 'León').strip().replace('\r', ' ').replace('-', '')
+        for i in range(first_ccaa_position, first_ccaa_position + num_rows):
+            ccaa = self.data_frame[first_column][i].replace('*', '').replace('(', '').replace(')', '').replace('Leon', 'León').strip().replace('\r', ' ').replace('-', '').replace(' arra', 'arra')
             ccaa = ' '.join(ccaa.split())
             value = self.data_frame[self.data_frame.columns[column]][i].split(' ')[part].replace('.', '').replace('-', '0').replace(',', '.').replace('%', '')
 
