@@ -1,7 +1,7 @@
 import os
 from collections import defaultdict
 from helpers.db import Measurement
-from constants import GRAPH_IMAGE_PATH
+from constants import GRAPH_IMAGE_PATH, ARMY
 from helpers.spain_geography import CCAA_POPULATION, CCAA_ADMITTED_BEDS, CCAA_ICU_BEDS
 
 
@@ -45,7 +45,7 @@ def get_completed_vaccination_sentence(territorial_unit, accumulated, today_tota
 
 def get_report_by_ccaa(date_in_header, ccaas_today, ccaas_yesterday, ccaas_accumulated_today):
     tweets = []
-    for ccaa in sorted(ccaas_today.keys()):
+    for ccaa in filter(lambda x: x != ARMY, sorted(ccaas_today.keys())):
         tweets.append(get_territorial_unit_report(ccaa, date_in_header, ccaas_today[ccaa],
                                                   ccaas_yesterday[ccaa], ccaas_accumulated_today[ccaa]))
 
@@ -92,7 +92,8 @@ def calculate_global_incidence(dict_to_unpack, measurement):
 
     total_cases = 0
     population = 0
-    for ccaa in dict_to_unpack:
+    ccaas = filter(lambda x: x != ARMY, dict_to_unpack.keys())
+    for ccaa in ccaas:
         total_cases += dict_to_unpack[ccaa][measurement] * population_to_compare[ccaa] / 100000
         population += population_to_compare[ccaa]
 
