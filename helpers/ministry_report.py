@@ -1,9 +1,12 @@
-from enum import Enum
 from datetime import datetime
+from tempfile import NamedTemporaryFile
 from constants import DAYS_WITHOUT_REPORT
 import math
 import tabula
+from pyexcel_ods3 import get_data
 from abc import ABC, abstractmethod
+import requests
+import pandas as pd
 
 
 class GenericMinistryReport(ABC):
@@ -40,7 +43,7 @@ class GenericMinistryReport(ABC):
         for i in range(first_ccaa_position, first_ccaa_position + num_rows):
             ccaa = self.data_frame[first_column][i].replace('*', '').replace('(', '').replace(')', '').replace('Leon', 'León').strip().replace('\r', ' ').replace('-', '').replace(' arra', 'arra')
             ccaa = ' '.join(ccaa.split())
-            value = self.data_frame[self.data_frame.columns[column]][i].split(' ')[part].replace('.', '').replace('-', '0').replace(',', '.').replace('%', '')
+            value = str(self.data_frame[self.data_frame.columns[column]][i]).split(' ')[part].replace('.', '').replace('-', '0').replace(',', '.').replace('%', '')
 
             cases[ccaa] = cast(value)
 
@@ -75,8 +78,41 @@ class SpainCovid19MinistryReport(GenericMinistryReport):
 class VaccinesMinistryReport(GenericMinistryReport):
 
     VACCINES_URL_FORMAT = "https://www.mscbs.gob.es/profesionales/saludPublica/ccayes/alertasActual/nCov/documentos/" \
-                          "Informe_GIV_comunicacion_{0}.pdf"
+                          "Informe_Comunicacion_{0}.ods"
 
     def _get_url(self):
         date_str = self._date.strftime("%Y%m%d")
         return self.VACCINES_URL_FORMAT.format(date_str)
+
+    @property
+    def data_frame(self):
+        if self._data_frame is None:
+            with NamedTemporaryFile(mode='wb', suffix=".ods") as f:
+                content = requests.get(self._get_url()).content
+                f.write(content)
+                f.flush()
+
+                data = get_data(f.name)
+                sheet = data[list(data.keys())[self._page]]
+                headers = sheet[0]
+                df_data = {}
+
+                for i in range(0, len(headers)):
+                    header = headers[i] if headers[i] else "CCAA"
+                    values = []
+
+                    for j in range(1, len(sheet)):
+                        if len(sheet[j]) >= len(headers):
+                            values.append(sheet[j][i])
+
+                    pos = 0
+                    header_base = header
+                    while header in df_data:
+                        header = f"{header_base}_{pos}"
+                        pos += 1
+
+                    df_data[header] = values
+
+                self._data_frame = pd.DataFrame(data=df_data)
+
+        return self._data_frame
