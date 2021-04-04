@@ -6,7 +6,6 @@ import tabula
 from pandas_ods_reader import read_ods
 from abc import ABC, abstractmethod
 import requests
-import pandas as pd
 
 
 class GenericMinistryReport(ABC):
