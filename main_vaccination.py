@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta
-from urllib.error import HTTPError
+from requests.exceptions import HTTPError
 from helpers.twitter import Twitter
 from helpers.db import Influx, Measurement
 from helpers.ministry_report import VaccinesMinistryReport

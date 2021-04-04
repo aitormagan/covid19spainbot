@@ -87,8 +87,9 @@ class VaccinesMinistryReport(GenericMinistryReport):
     def data_frame(self):
         if self._data_frame is None:
             with NamedTemporaryFile(mode='wb', suffix=".ods") as f:
-                content = requests.get(self._get_url()).content
-                f.write(content)
+                req = requests.get(self._get_url())
+                req.raise_for_status()
+                f.write(req.content)
                 f.flush()
 
                 self._data_frame = read_ods(f.name, self._page)
