@@ -6,7 +6,8 @@ from helpers.db import Influx, Measurement
 from helpers.ministry_report import VaccinesMinistryReport
 from main_daily import update_stat
 from helpers.reports import get_vaccination_report, get_spain_vaccination_report, get_graph_url
-from constants import VACCINE_IMAGE_PATH
+from helpers.spain_geography import CCAA_POPULATION
+from constants import VACCINE_IMAGE_PATH, ARMY
 
 twitter = Twitter()
 influx = Influx()
@@ -21,6 +22,8 @@ def main():
     if not data:
         try:
             update_vaccinations(today)
+            update_percentage(today, Measurement.COMPLETED_VACCINATIONS, Measurement.PERCENTAGE_COMPLETED_VACCINATION)
+            update_percentage(today, Measurement.FIRST_DOSE_VACCINATIONS, Measurement.PERCENTAGE_FIRST_DOSE)
             publish_report(today)
         except HTTPError:
             logging.info("PDF is not available yet...")
@@ -30,12 +33,30 @@ def main():
             twitter.send_dm(dm_text)
 
 
-def update_vaccinations(today):
-    vaccination_report = VaccinesMinistryReport(today, 3)
-    accumulated_vaccinations = vaccination_report.get_column_data(4, num_rows=20)
+def update_vaccinations(date):
+    vaccination_report = VaccinesMinistryReport(date, 1)
+    accumulated_vaccinations = vaccination_report.get_column_data(5, num_rows=20)
     accumulated_completed_vaccinations = vaccination_report.get_column_data(7, num_rows=20)
-    update_stat(Measurement.VACCINATIONS, accumulated_vaccinations, today)
-    update_stat(Measurement.COMPLETED_VACCINATIONS, accumulated_completed_vaccinations, today)
+    accumulated_vaccinations["España"] = sum(accumulated_vaccinations.values())
+    accumulated_completed_vaccinations["España"] = sum(accumulated_completed_vaccinations.values())
+    vaccination_report = VaccinesMinistryReport(date, 4)
+    accumulated_first_doses = vaccination_report.get_column_data(22, num_rows=20)
+    accumulated_first_doses["España"] = sum(accumulated_first_doses.values())
+    update_stat(Measurement.VACCINATIONS, accumulated_vaccinations, date)
+    update_stat(Measurement.COMPLETED_VACCINATIONS, accumulated_completed_vaccinations, date)
+    update_stat(Measurement.FIRST_DOSE_VACCINATIONS, accumulated_first_doses, date)
+
+
+def update_percentage(date, accum_measurement, percentage_measurement):
+    accum = influx.get_stat_accumulated_until_day(accum_measurement, date)
+
+    data = {}
+
+    for region in filter(lambda x: x != ARMY, accum.keys()):
+        percentage = 100 * accum[region] / (CCAA_POPULATION[region] if region in CCAA_POPULATION else sum(CCAA_POPULATION.values()))
+        data[region] = percentage
+
+    influx.insert_stats(percentage_measurement, date, data)
 
 
 def publish_report(today):

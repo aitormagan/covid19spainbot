@@ -3,7 +3,7 @@ from tempfile import NamedTemporaryFile
 from constants import DAYS_WITHOUT_REPORT
 import math
 import tabula
-from pyexcel_ods3 import get_data
+from pandas_ods_reader import read_ods
 from abc import ABC, abstractmethod
 import requests
 import pandas as pd
@@ -43,7 +43,7 @@ class GenericMinistryReport(ABC):
         for i in range(first_ccaa_position, first_ccaa_position + num_rows):
             ccaa = self.data_frame[first_column][i].replace('*', '').replace('(', '').replace(')', '').replace('Leon', 'León').strip().replace('\r', ' ').replace('-', '').replace(' arra', 'arra')
             ccaa = ' '.join(ccaa.split())
-            value = str(self.data_frame[self.data_frame.columns[column]][i]).split(' ')[part].replace('.', '').replace('-', '0').replace(',', '.').replace('%', '')
+            value = str(self.data_frame[self.data_frame.columns[column]][i]).split(' ')[part].replace('.0', '').replace('.', '').replace('-', '0').replace(',', '.').replace('%', '')
 
             cases[ccaa] = cast(value)
 
@@ -92,27 +92,6 @@ class VaccinesMinistryReport(GenericMinistryReport):
                 f.write(content)
                 f.flush()
 
-                data = get_data(f.name)
-                sheet = data[list(data.keys())[self._page]]
-                headers = sheet[0]
-                df_data = {}
-
-                for i in range(0, len(headers)):
-                    header = headers[i] if headers[i] else "CCAA"
-                    values = []
-
-                    for j in range(1, len(sheet)):
-                        if len(sheet[j]) >= len(headers):
-                            values.append(sheet[j][i])
-
-                    pos = 0
-                    header_base = header
-                    while header in df_data:
-                        header = f"{header_base}_{pos}"
-                        pos += 1
-
-                    df_data[header] = values
-
-                self._data_frame = pd.DataFrame(data=df_data)
+                self._data_frame = read_ods(f.name, self._page)
 
         return self._data_frame

@@ -16,6 +16,9 @@ class Measurement(Enum):
     PERCENTAGE_ICU = "percentage_icu"
     VACCINATIONS = "vaccinations"
     COMPLETED_VACCINATIONS = "completed_vaccinations"
+    FIRST_DOSE_VACCINATIONS = "first_dose_vaccinations"
+    PERCENTAGE_FIRST_DOSE = "percentage_first_dose"
+    PERCENTAGE_COMPLETED_VACCINATION = "percentage_completed_vaccination"
 
 
 class Influx:
@@ -72,7 +75,10 @@ class Influx:
 
         for item in query_result.items():
             for values in item[1]:
-                ccaa_map[item[0][1]["ccaa"]] = values["sum"]
+                ccaa = item[0][1]["ccaa"]
+                # Spain info is calculated. It's stored to be used in Grafana...
+                if ccaa != "España":
+                    ccaa_map[ccaa] = values["sum"]
 
         return ccaa_map
 
@@ -144,6 +150,8 @@ class Influx:
     def _pack_elements(*_, **kwargs):
 
         keys = set([key for arg in kwargs for key in kwargs[arg].keys()])
+        # Spain info is calculated. It's stored to be used in Grafana...d
+        keys.discard("España")
 
         result = defaultdict(lambda: dict())
         for key in keys:
