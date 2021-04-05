@@ -2,6 +2,7 @@ from datetime import datetime
 from tempfile import NamedTemporaryFile
 from constants import DAYS_WITHOUT_REPORT
 import math
+import re
 import tabula
 from pandas_ods_reader import read_ods
 from abc import ABC, abstractmethod
@@ -42,8 +43,9 @@ class GenericMinistryReport(ABC):
         for i in range(first_ccaa_position, first_ccaa_position + num_rows):
             ccaa = self.data_frame[first_column][i].replace('*', '').replace('(', '').replace(')', '').replace('Leon', 'León').strip().replace('\r', ' ').replace('-', '').replace(' arra', 'arra')
             ccaa = ' '.join(ccaa.split())
-            value = str(self.data_frame[self.data_frame.columns[column]][i]).split(' ')[part].replace('.0', '').replace('.', '').replace('-', '0').replace(',', '.').replace('%', '')
-
+            value_str = str(self.data_frame[self.data_frame.columns[column]][i]).split(' ')[part]
+            value_str = re.sub("\\.0$", "", value_str)
+            value = value_str.replace('.', '').replace('-', '0').replace(',', '.').replace('%', '')
             cases[ccaa] = cast(value)
 
         return cases

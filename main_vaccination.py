@@ -7,7 +7,7 @@ from helpers.ministry_report import VaccinesMinistryReport
 from main_daily import update_stat
 from helpers.reports import get_vaccination_report, get_spain_vaccination_report, get_graph_url
 from helpers.spain_geography import CCAA_POPULATION
-from constants import VACCINE_IMAGE_PATH, ARMY
+from constants import VACCINE_IMAGE_PATH, ARMY, SPAIN
 
 twitter = Twitter()
 influx = Influx()
@@ -37,11 +37,11 @@ def update_vaccinations(date):
     vaccination_report = VaccinesMinistryReport(date, 1)
     accumulated_vaccinations = vaccination_report.get_column_data(5, num_rows=20)
     accumulated_completed_vaccinations = vaccination_report.get_column_data(7, num_rows=20)
-    accumulated_vaccinations["España"] = sum(accumulated_vaccinations.values())
-    accumulated_completed_vaccinations["España"] = sum(accumulated_completed_vaccinations.values())
+    accumulated_vaccinations[SPAIN] = sum(accumulated_vaccinations.values())
+    accumulated_completed_vaccinations[SPAIN] = sum(accumulated_completed_vaccinations.values())
     vaccination_report = VaccinesMinistryReport(date, 4)
     accumulated_first_doses = vaccination_report.get_column_data(22, num_rows=20)
-    accumulated_first_doses["España"] = sum(accumulated_first_doses.values())
+    accumulated_first_doses[SPAIN] = sum(accumulated_first_doses.values())
     update_stat(Measurement.VACCINATIONS, accumulated_vaccinations, date)
     update_stat(Measurement.COMPLETED_VACCINATIONS, accumulated_completed_vaccinations, date)
     update_stat(Measurement.FIRST_DOSE_VACCINATIONS, accumulated_first_doses, date)
@@ -73,12 +73,6 @@ def publish_report(today):
     spain_tweet = f"🇪🇸 España - Estado vacunación a {today_str}:\n\n{spain_tweet}\n\n{interactive_graph_sentence}"
     graph_url = get_graph_url(datetime(2021, 1, 1), today, graph_path=VACCINE_IMAGE_PATH)
     last_tweet = twitter.publish_tweet_with_media(spain_tweet, graph_url)
-
-    army_string = "Fuerzas Armadas"
-    today_vaccinations.pop(army_string)
-    today_completed_vaccinations.pop(army_string)
-    accumulated_vaccinations.pop(army_string)
-    accumulated_completed_vaccinations.pop(army_string)
 
     sentences_vaccination = get_vaccination_report(accumulated_vaccinations, today_vaccinations, False)
     last_tweet = twitter.publish_sentences_in_tweets(sentences_vaccination, f"💉 Total Dosis a {today_str}",

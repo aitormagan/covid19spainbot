@@ -1,17 +1,17 @@
 import os
 from collections import defaultdict
 from helpers.db import Measurement
-from constants import GRAPH_IMAGE_PATH
+from constants import GRAPH_IMAGE_PATH, SPAIN
 from helpers.spain_geography import CCAA_POPULATION, CCAA_ADMITTED_BEDS, CCAA_ICU_BEDS
 
 
 def get_spain_vaccination_report(accumulated_doses_data, today_doses_data,
                                  accumulated_completed_vaccination_data, today_completed_vaccination_data):
 
-    tweet = get_vaccination_sentence("Dosis", sum(accumulated_doses_data.values()),
-                                      sum(today_doses_data.values())) + "\n"
-    tweet += get_completed_vaccination_sentence("Pautas", sum(accumulated_completed_vaccination_data.values()),
-                                                sum(today_completed_vaccination_data.values()))
+    tweet = get_vaccination_sentence("Dosis", accumulated_doses_data[SPAIN],
+                                     today_doses_data[SPAIN]) + "\n"
+    tweet += get_completed_vaccination_sentence("Pautas", accumulated_completed_vaccination_data[SPAIN],
+                                                today_completed_vaccination_data[SPAIN])
 
     return tweet
 
@@ -68,7 +68,7 @@ def get_global_data(dict_to_unpack):
 
     result = defaultdict(lambda: 0)
     for key in keys:
-        for ccaa in dict_to_unpack:
+        for ccaa in filter(lambda x: x in CCAA_POPULATION.keys(), dict_to_unpack.keys()):
             result[key] += dict_to_unpack[ccaa][key] if dict_to_unpack[ccaa][key] else 0
 
     if ia_exists:
