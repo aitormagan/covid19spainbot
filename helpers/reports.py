@@ -6,11 +6,14 @@ from helpers.spain_geography import CCAA_POPULATION, CCAA_ADMITTED_BEDS, CCAA_IC
 
 
 def get_spain_vaccination_report(accumulated_doses_data, today_doses_data,
-                                 accumulated_completed_vaccination_data, today_completed_vaccination_data):
+                                 accumulated_completed_vaccination_data, today_completed_vaccination_data,
+                                 accumulated_first_dose_data, today_first_dose_data):
 
     tweet = get_vaccination_sentence("Dosis", accumulated_doses_data[SPAIN],
                                      today_doses_data[SPAIN]) + "\n"
-    tweet += get_completed_vaccination_sentence("Pautas", accumulated_completed_vaccination_data[SPAIN],
+    tweet += get_completed_vaccination_sentence("Personas 1 dosis", accumulated_first_dose_data[SPAIN],
+                                                today_first_dose_data[SPAIN]) + "\n"
+    tweet += get_completed_vaccination_sentence("Pautas completas", accumulated_completed_vaccination_data[SPAIN],
                                                 today_completed_vaccination_data[SPAIN])
 
     return tweet
