@@ -35,9 +35,9 @@ def main():
 
 def update_vaccinations(date):
     vaccination_report = VaccinesMinistryReport(date, 1)
-    accumulated_vaccinations = vaccination_report.get_column_data(5, num_rows=20)
-    accumulated_first_doses = vaccination_report.get_column_data(7, num_rows=20)
-    accumulated_completed_vaccinations = vaccination_report.get_column_data(8, num_rows=20)
+    accumulated_vaccinations = vaccination_report.get_column_data(6, num_rows=20)
+    accumulated_first_doses = vaccination_report.get_column_data(8, num_rows=20)
+    accumulated_completed_vaccinations = vaccination_report.get_column_data(9, num_rows=20)
 
     accumulated_vaccinations[SPAIN] = sum(accumulated_vaccinations.values())
     accumulated_completed_vaccinations[SPAIN] = sum(accumulated_completed_vaccinations.values())
