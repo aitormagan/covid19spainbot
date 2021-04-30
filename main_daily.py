@@ -72,20 +72,6 @@ def update_database(today):
     influx.insert_stats(Measurement.PERCENTAGE_ICU, today, today_percentage_icu)
 
 
-def _get_hospitals_report(date):
-    for height in [160, 150, 170, 135, 200]:
-        try:
-            hospital_report = SpainCovid19MinistryReport(date, 3, (height, 33, height + 260, 33 + 790))
-            hospital_report.get_column_data(7, cast=float)
-            return hospital_report
-        except HTTPError as e:
-            raise e
-        except Exception as e:
-            pass
-
-    raise Exception("Impossible to find an appropriate ")
-
-
 def update_stat(stat, accumulated_today, today):
     accumulated_yesterday = influx.get_stat_accumulated_until_day(stat, today)
     today_number = get_today_numbers(accumulated_today, accumulated_yesterday)
