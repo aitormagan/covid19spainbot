@@ -16,6 +16,9 @@ class Measurement(Enum):
     PERCENTAGE_ICU = "percentage_icu"
     VACCINATIONS = "vaccinations"
     COMPLETED_VACCINATIONS = "completed_vaccinations"
+    FIRST_DOSE_VACCINATIONS = "first_dose_vaccinations"
+    PERCENTAGE_FIRST_DOSE = "percentage_first_dose"
+    PERCENTAGE_COMPLETED_VACCINATION = "percentage_completed_vaccination"
 
 
 class Influx:

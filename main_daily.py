@@ -46,8 +46,8 @@ def subtract_days_ignoring_weekends(initial_date, days_to_substract):
 
 def update_database(today):
     pcrs_report = SpainCovid19MinistryReport(today, 1)
-    deaths_report = SpainCovid19MinistryReport(today, 5, (142, 539, 142+343, 539+265))
-    hospital_report = _get_hospitals_report(today)
+    deaths_report = SpainCovid19MinistryReport(today, 5, (142, 490, 142+343, 490+265))
+    hospital_report = SpainCovid19MinistryReport(today, 3)
 
     try:
         accumulated_pcrs_today = pcrs_report.get_column_data(1)
@@ -57,37 +57,19 @@ def update_database(today):
         pcrs_report = SpainCovid19MinistryReport(today, 1, (239, 56, 239 + 283, 56 + 756))
         accumulated_pcrs_today = pcrs_report.get_column_data(1)
 
-    accumulated_admitted_today = hospital_report.get_column_data(1)
-    accumulated_icu_today = hospital_report.get_column_data(3)
     accumulated_deaths_today = deaths_report.get_column_data(1)
-    today_percentage_admitted = hospital_report.get_column_data(7, cast=float)
-    today_percentage_icu = hospital_report.get_column_data(9, cast=float)
+    today_percentage_admitted = hospital_report.get_column_data(2, cast=float)
+    today_percentage_icu = hospital_report.get_column_data(4, cast=float)
     today_pcrs_last_24h = pcrs_report.get_column_data(2)
     accumulated_incidence = pcrs_report.get_column_data(3, 1, float)
 
     update_stat(Measurement.PCRS, accumulated_pcrs_today, today)
     update_stat(Measurement.DEATHS, accumulated_deaths_today, today)
-    update_stat(Measurement.ADMITTED_PEOPLE, accumulated_admitted_today, today)
-    update_stat(Measurement.ICU_PEOPLE, accumulated_icu_today, today)
 
     influx.insert_stats(Measurement.PCRS_LAST_24H, today, today_pcrs_last_24h)
     influx.insert_stats(Measurement.ACCUMULATED_INCIDENCE, today, accumulated_incidence)
     influx.insert_stats(Measurement.PERCENTAGE_ADMITTED, today, today_percentage_admitted)
     influx.insert_stats(Measurement.PERCENTAGE_ICU, today, today_percentage_icu)
-
-
-def _get_hospitals_report(date):
-    for height in [160, 150, 170, 135, 200]:
-        try:
-            hospital_report = SpainCovid19MinistryReport(date, 3, (height, 33, height + 260, 33 + 790))
-            hospital_report.get_column_data(7, cast=float)
-            return hospital_report
-        except HTTPError as e:
-            raise e
-        except Exception as e:
-            pass
-
-    raise Exception("Impossible to find an appropriate ")
 
 
 def update_stat(stat, accumulated_today, today):

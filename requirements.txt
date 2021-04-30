@@ -2,4 +2,4 @@ tweepy
 tabula-py
 influxdb
 requests
-pyexcel-ods
+pandas_ods_reader

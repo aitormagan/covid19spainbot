@@ -1,9 +1,12 @@
-from enum import Enum
 from datetime import datetime
+from tempfile import NamedTemporaryFile
 from constants import DAYS_WITHOUT_REPORT
 import math
+import re
 import tabula
+from pandas_ods_reader import read_ods
 from abc import ABC, abstractmethod
+import requests
 
 
 class GenericMinistryReport(ABC):
@@ -40,8 +43,9 @@ class GenericMinistryReport(ABC):
         for i in range(first_ccaa_position, first_ccaa_position + num_rows):
             ccaa = self.data_frame[first_column][i].replace('*', '').replace('(', '').replace(')', '').replace('Leon', 'León').strip().replace('\r', ' ').replace('-', '').replace(' arra', 'arra')
             ccaa = ' '.join(ccaa.split())
-            value = self.data_frame[self.data_frame.columns[column]][i].split(' ')[part].replace('.', '').replace('-', '0').replace(',', '.').replace('%', '')
-
+            value_str = str(self.data_frame[self.data_frame.columns[column]][i]).split(' ')[part]
+            value_str = re.sub("\\.0$", "", value_str)
+            value = value_str.replace('.', '').replace('-', '0').replace(',', '.').replace('%', '')
             cases[ccaa] = cast(value)
 
         return cases
@@ -75,8 +79,21 @@ class SpainCovid19MinistryReport(GenericMinistryReport):
 class VaccinesMinistryReport(GenericMinistryReport):
 
     VACCINES_URL_FORMAT = "https://www.mscbs.gob.es/profesionales/saludPublica/ccayes/alertasActual/nCov/documentos/" \
-                          "Informe_GIV_comunicacion_{0}.pdf"
+                          "Informe_Comunicacion_{0}.ods"
 
     def _get_url(self):
         date_str = self._date.strftime("%Y%m%d")
         return self.VACCINES_URL_FORMAT.format(date_str)
+
+    @property
+    def data_frame(self):
+        if self._data_frame is None:
+            with NamedTemporaryFile(mode='wb', suffix=".ods") as f:
+                req = requests.get(self._get_url())
+                req.raise_for_status()
+                f.write(req.content)
+                f.flush()
+
+                self._data_frame = read_ods(f.name, self._page)
+
+        return self._data_frame
