@@ -84,3 +84,24 @@ class SpainCovid19MinistryReportUnitTest(unittest.TestCase):
 
             self.assertEqual(list(CCAA_POPULATION.keys()), list(result.keys()))
             self.assertEqual(list(range(21000, 40000, 1000)), list(result.values()))
+
+    @patch("helpers.ministry_report.requests")
+    @patch("helpers.ministry_report.NamedTemporaryFile")
+    @patch("helpers.ministry_report.read_ods")
+    def test_given_vaccination_report_when_data_frame_then_request_made(self, read_ods_mock, named_temporary_file_mock,
+                                                                        request_mock):
+        date = datetime(2020, 5, 5)
+        page = 4
+        report = VaccinesMinistryReport(date, page)
+        url = MagicMock()
+        report._get_url = MagicMock(return_value=url)
+
+        result = report.data_frame
+
+        assert result == read_ods_mock.return_value
+
+        request_mock.get.assert_called_once_with(url)
+        report._get_url.assert_called_once_with()
+        named_temporary_file_mock.return_value.__enter__.return_value.write.assert_called_once_with(request_mock.get.return_value.content)
+        named_temporary_file_mock.return_value.__enter__.return_value.flush.assert_called_once_with()
+        read_ods_mock.assert_called_once_with(named_temporary_file_mock.return_value.__enter__.return_value.name, page)
