@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from requests.exceptions import HTTPError
 from helpers.twitter import Twitter
 from helpers.db import Influx, Measurement

@@ -95,19 +95,25 @@ class MainVaccinationUnitTest(unittest.TestCase):
 
         today = MagicMock()
         vaccinations = MagicMock()
+        first_dose = MagicMock()
         completed_vaccinations = MagicMock()
-        vaccines_ministry_report_mock.return_value.get_column_data.side_effect = [vaccinations, completed_vaccinations]
+        vaccines_ministry_report_mock.return_value.get_column_data.side_effect = [vaccinations, first_dose,
+                                                                                  completed_vaccinations]
 
         update_vaccinations(today)
 
-        vaccines_ministry_report_mock.assert_called_once_with(today, 3)
-        vaccines_ministry_report_mock.return_value.get_column_data.assert_has_calls([call(4, num_rows=20),
-                                                                                     call(7, num_rows=20)])
+        vaccines_ministry_report_mock.assert_called_once_with(today, 1)
+        vaccines_ministry_report_mock.return_value.get_column_data.assert_has_calls([call(6, num_rows=20),
+                                                                                     call(8, num_rows=20),
+                                                                                     call(9, num_rows=20)])
         update_stat_mock.assert_has_calls([call(Measurement.VACCINATIONS,
                                                 vaccinations,
                                                 today),
                                            call(Measurement.COMPLETED_VACCINATIONS,
                                                 completed_vaccinations,
+                                                today),
+                                           call(Measurement.FIRST_DOSE_VACCINATIONS,
+                                                first_dose,
                                                 today)])
 
     @patch("main_vaccination.influx")
@@ -123,11 +129,14 @@ class MainVaccinationUnitTest(unittest.TestCase):
         today.strftime.return_value = date_str
         vaccinations = MagicMock()
         completed_vaccinations = MagicMock()
+        first_doses = MagicMock()
         accumulated_vaccinations = MagicMock()
         accumulated_completed_vaccinations = MagicMock()
-        influx_mock.get_stat_group_by_day.side_effect = [vaccinations, completed_vaccinations]
+        accumulated_first_doses = MagicMock()
+        influx_mock.get_stat_group_by_day.side_effect = [vaccinations, completed_vaccinations, first_doses]
         influx_mock.get_stat_accumulated_until_day.side_effect = [accumulated_vaccinations,
-                                                                  accumulated_completed_vaccinations]
+                                                                  accumulated_completed_vaccinations,
+                                                                  accumulated_first_doses]
         sentence1 = MagicMock()
         sentence2 = MagicMock()
         spain_sentence = "spain_doses_and_completed"
@@ -154,7 +163,8 @@ class MainVaccinationUnitTest(unittest.TestCase):
         get_graph_url_mock.assert_called_once_with(datetime(2021, 1, 1), today, graph_path=VACCINE_IMAGE_PATH)
         get_spain_vaccination_report_mock.assert_called_once_with(accumulated_vaccinations, vaccinations,
                                                                   accumulated_completed_vaccinations,
-                                                                  completed_vaccinations)
+                                                                  completed_vaccinations, accumulated_first_doses,
+                                                                  first_doses)
         twitter_mock.publish_tweet_with_media.assert_called_once_with(f"🇪🇸 España - Estado vacunación a {date_str}:"
                                                                       f"\n\n{spain_sentence}\n\n➡️ Gráfico "
                                                                       f"Interactivo: https://home.aitormagan.es/d/TeEplNgRk/covid-vacunas-espana?orgId=1",

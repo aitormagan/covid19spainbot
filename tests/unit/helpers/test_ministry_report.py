@@ -47,7 +47,7 @@ class SpainCovid19MinistryReportUnitTest(unittest.TestCase):
         report.get_cases_pdf_id_for_date = MagicMock(return_value=pdf_id)
 
         self.assertEqual("https://www.mscbs.gob.es/profesionales/saludPublica/ccayes/alertasActual/nCov/documentos/"
-                         f"Informe_GIV_comunicacion_{date.strftime('%Y%m%d')}.pdf", report._get_url())
+                         f"Informe_Comunicacion_{date.strftime('%Y%m%d')}.ods", report._get_url())
 
     @patch("helpers.ministry_report.tabula")
     def test_given_no_data_frame_acceded_when_access_then_tabula_used(self, tabula_mock):
