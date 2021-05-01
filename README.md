@@ -17,8 +17,9 @@ número total de nuevos positivos del día.
 
 Links: 
 * Bot: [https://twitter.com/CoronaSpainBot](https://twitter.com/CoronaSpainBot)
-* Dashboard Evolución: [https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1](https://home.aitormagan.es/d/HukfaHZgk/covid19?orgId=1)
-* Dashboard Comparación: [https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1](https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison?orgId=1)
+* Dashboard Vacunación: [https://home.aitormagan.es/d/TeEplNgRk/covid19-vacunas-espana](https://home.aitormagan.es/d/TeEplNgRk/covid19-vacunas-espana)
+* Dashboard Evolución: [https://home.aitormagan.es/d/HukfaHZgk/covid19](https://home.aitormagan.es/d/HukfaHZgk/covid19)
+* Dashboard Comparación: [https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison](https://home.aitormagan.es/d/h6K39NRRk/covid19-comparison)
 
 ## Ejecución
 
