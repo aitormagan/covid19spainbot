@@ -35,9 +35,14 @@ def main():
 
 def update_vaccinations(date):
     vaccination_report = VaccinesMinistryReport(date, 1)
-    accumulated_vaccinations = vaccination_report.get_column_data(6, num_rows=20)
-    accumulated_first_doses = vaccination_report.get_column_data(8, num_rows=20)
-    accumulated_completed_vaccinations = vaccination_report.get_column_data(9, num_rows=20)
+
+    administrated_column = get_column_index(vaccination_report.data_frame, "administradas")
+    first_dose_column = get_column_index(vaccination_report.data_frame, "1 dosis")
+    completed_column = get_column_index(vaccination_report.data_frame, "completada")
+
+    accumulated_vaccinations = vaccination_report.get_column_data(administrated_column, num_rows=20)
+    accumulated_first_doses = vaccination_report.get_column_data(first_dose_column, num_rows=20)
+    accumulated_completed_vaccinations = vaccination_report.get_column_data(completed_column, num_rows=20)
 
     accumulated_vaccinations[SPAIN] = sum(accumulated_vaccinations.values())
     accumulated_completed_vaccinations[SPAIN] = sum(accumulated_completed_vaccinations.values())
@@ -46,6 +51,11 @@ def update_vaccinations(date):
     update_stat(Measurement.VACCINATIONS, accumulated_vaccinations, date)
     update_stat(Measurement.COMPLETED_VACCINATIONS, accumulated_completed_vaccinations, date)
     update_stat(Measurement.FIRST_DOSE_VACCINATIONS, accumulated_first_doses, date)
+
+
+def get_column_index(df, column_title):
+    final_column_name = next((x for x in df.columns if column_title.lower() in x.lower()), None)
+    return list(df.columns).index(final_column_name)
 
 
 def update_percentage(date, accum_measurement, percentage_measurement):

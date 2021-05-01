@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime
 from constants import VACCINE_IMAGE_PATH
 from unittest.mock import patch, MagicMock, call, ANY
-from main_vaccination import main, Measurement, HTTPError, update_vaccinations, publish_report
+from main_vaccination import main, Measurement, HTTPError, update_vaccinations, publish_report, get_column_index
 
 
 class MainVaccinationUnitTest(unittest.TestCase):
@@ -88,10 +88,12 @@ class MainVaccinationUnitTest(unittest.TestCase):
         self.assertEqual(280, len(dm_text))
         self.assertTrue(dm_text.startswith(f"There was an unhandled exception. Trace:\n\n{exception_text}"))
 
+    @patch("main_vaccination.get_column_index")
     @patch("main_vaccination.VaccinesMinistryReport")
     @patch("main_vaccination.update_stat")
     def test_when_update_vaccinations_then_report_checked_and_database_updated(self, update_stat_mock,
-                                                                               vaccines_ministry_report_mock):
+                                                                               vaccines_ministry_report_mock,
+                                                                               get_column_index_mock):
 
         today = MagicMock()
         vaccinations = MagicMock()
@@ -100,12 +102,18 @@ class MainVaccinationUnitTest(unittest.TestCase):
         vaccines_ministry_report_mock.return_value.get_column_data.side_effect = [vaccinations, first_dose,
                                                                                   completed_vaccinations]
 
+        doses_column = MagicMock()
+        first_dose_column = MagicMock()
+        completed_column = MagicMock()
+
+        get_column_index_mock.side_effect = [doses_column, first_dose_column, completed_column]
+
         update_vaccinations(today)
 
         vaccines_ministry_report_mock.assert_called_once_with(today, 1)
-        vaccines_ministry_report_mock.return_value.get_column_data.assert_has_calls([call(6, num_rows=20),
-                                                                                     call(8, num_rows=20),
-                                                                                     call(9, num_rows=20)])
+        vaccines_ministry_report_mock.return_value.get_column_data.assert_has_calls([call(doses_column, num_rows=20),
+                                                                                     call(first_dose_column, num_rows=20),
+                                                                                     call(completed_column, num_rows=20)])
         update_stat_mock.assert_has_calls([call(Measurement.VACCINATIONS,
                                                 vaccinations,
                                                 today),
@@ -115,6 +123,19 @@ class MainVaccinationUnitTest(unittest.TestCase):
                                            call(Measurement.FIRST_DOSE_VACCINATIONS,
                                                 first_dose,
                                                 today)])
+
+    def test_given_column_in_columns_when_get_column_index_then_position_returned(self):
+        df = MagicMock()
+        df.columns = ['Dosis Administradas', 'Pautas Completadas', '1 dosis']
+
+        self.assertEqual(get_column_index(df, "completadas"), 1)
+
+    def test_given_column_not_in_columns_when_get_column_index_then_exception_risen(self):
+        df = MagicMock()
+        df.columns = ['Dosis Administradas', 'Pautas Completadas', '1 dosis']
+
+        with self.assertRaises(ValueError):
+            get_column_index(df, "test")
 
     @patch("main_vaccination.influx")
     @patch("main_vaccination.twitter")
