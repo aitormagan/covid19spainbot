@@ -89,7 +89,7 @@ def publish_report(today):
     last_tweet = twitter.publish_tweet_with_media(spain_tweet, graph_url)
     ccaa_tweets = []
 
-    for ccaa in filter(lambda x: x in CCAA_POPULATION.keys(), accumulated_vaccinations.keys()):
+    for ccaa in filter(lambda x: x in CCAA_POPULATION.keys(), sorted(accumulated_vaccinations.keys())):
         ccaa_tweet = get_vaccination_report(ccaa, accumulated_vaccinations, today_vaccinations,
                                             accumulated_completed_vaccinations,
                                             today_completed_vaccinations,
