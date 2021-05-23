@@ -5,7 +5,7 @@ from helpers.twitter import Twitter
 from helpers.db import Influx, Measurement
 from helpers.ministry_report import VaccinesMinistryReport
 from main_daily import update_stat
-from helpers.reports import get_vaccination_report, get_spain_vaccination_report, get_graph_url
+from helpers.reports import get_vaccination_report, get_graph_url
 from helpers.spain_geography import CCAA_POPULATION
 from constants import VACCINE_IMAGE_PATH, ARMY, SPAIN
 
@@ -80,22 +80,23 @@ def publish_report(today):
     accumulated_first_doses = influx.get_stat_accumulated_until_day(Measurement.FIRST_DOSE_VACCINATIONS, today)
 
     today_str = today.strftime("%d/%m/%Y")
-    spain_tweet = get_spain_vaccination_report(accumulated_vaccinations, today_vaccinations,
-                                               accumulated_completed_vaccinations, today_completed_vaccinations,
-                                               accumulated_first_doses, today_first_doses)
+    spain_tweet = get_vaccination_report(SPAIN, accumulated_vaccinations, today_vaccinations,
+                                         accumulated_completed_vaccinations, today_completed_vaccinations,
+                                         accumulated_first_doses, today_first_doses)
     interactive_graph_sentence = "➡️ Gráfico Interactivo: https://home.aitormagan.es/d/TeEplNgRk/covid-vacunas-espana?orgId=1"
-    spain_tweet = f"🇪🇸 España - Estado vacunación a {today_str}:\n\n{spain_tweet}\n\n{interactive_graph_sentence}"
+    spain_tweet = f"🇪🇸 España - Vacunación a {today_str}:\n\n{spain_tweet}\n\n{interactive_graph_sentence}"
     graph_url = get_graph_url(datetime(2021, 1, 1), today, graph_path=VACCINE_IMAGE_PATH)
     last_tweet = twitter.publish_tweet_with_media(spain_tweet, graph_url)
+    ccaa_tweets = []
 
-    sentences_vaccination = get_vaccination_report(accumulated_vaccinations, today_vaccinations, False)
-    last_tweet = twitter.publish_sentences_in_tweets(sentences_vaccination, f"💉 Total Dosis a {today_str}",
-                                                    last_tweet=last_tweet)
+    for ccaa in filter(lambda x: x in CCAA_POPULATION.keys(), sorted(accumulated_vaccinations.keys())):
+        ccaa_tweet = get_vaccination_report(ccaa, accumulated_vaccinations, today_vaccinations,
+                                            accumulated_completed_vaccinations,
+                                            today_completed_vaccinations,
+                                            accumulated_first_doses, today_first_doses)
+        ccaa_tweets.append(f"{ccaa} - Vacunación a {today_str}:\n\n{ccaa_tweet}")
 
-    sentences_completed_vaccination = get_vaccination_report(accumulated_completed_vaccinations,
-                                                             today_completed_vaccinations, True)
-    twitter.publish_sentences_in_tweets(sentences_completed_vaccination, f"💉 Total Pautas Completas a {today_str}",
-                                       last_tweet=last_tweet)
+    twitter.publish_tweets(ccaa_tweets, last_tweet)
 
 
 if __name__ == "__main__":

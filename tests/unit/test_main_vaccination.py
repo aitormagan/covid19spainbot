@@ -140,10 +140,9 @@ class MainVaccinationUnitTest(unittest.TestCase):
     @patch("main_vaccination.influx")
     @patch("main_vaccination.twitter")
     @patch("main_vaccination.get_vaccination_report")
-    @patch("main_vaccination.get_spain_vaccination_report")
     @patch("main_vaccination.get_graph_url")
-    def test_when_publish_report_then_twitter_called(self, get_graph_url_mock, get_spain_vaccination_report_mock,
-                                                     get_vaccination_report_mock, twitter_mock, influx_mock):
+    def test_when_publish_report_then_twitter_called(self, get_graph_url_mock, get_vaccination_report_mock,
+                                                     twitter_mock, influx_mock):
 
         date_str = "04/05/2006"
         today = MagicMock()
@@ -151,18 +150,17 @@ class MainVaccinationUnitTest(unittest.TestCase):
         vaccinations = MagicMock()
         completed_vaccinations = MagicMock()
         first_doses = MagicMock()
-        accumulated_vaccinations = MagicMock()
+        accumulated_vaccinations = {"Madrid": 123, "Aragón": 456}
         accumulated_completed_vaccinations = MagicMock()
         accumulated_first_doses = MagicMock()
         influx_mock.get_stat_group_by_day.side_effect = [vaccinations, completed_vaccinations, first_doses]
         influx_mock.get_stat_accumulated_until_day.side_effect = [accumulated_vaccinations,
                                                                   accumulated_completed_vaccinations,
                                                                   accumulated_first_doses]
-        sentence1 = MagicMock()
-        sentence2 = MagicMock()
         spain_sentence = "spain_doses_and_completed"
-        get_vaccination_report_mock.side_effect = [[sentence1], [sentence2]]
-        get_spain_vaccination_report_mock.return_value = spain_sentence
+        ccaa1_sentence = "ccaa1_sentence"
+        ccaa2_sentence = "ccaa2_sentence"
+        get_vaccination_report_mock.side_effect = [spain_sentence, ccaa1_sentence, ccaa2_sentence]
         last_tweet = MagicMock()
         first_tweet = MagicMock()
         twitter_mock.publish_sentences_in_tweets.return_value = last_tweet
@@ -174,19 +172,23 @@ class MainVaccinationUnitTest(unittest.TestCase):
                                                             call(Measurement.COMPLETED_VACCINATIONS, today)])
         influx_mock.get_stat_accumulated_until_day.assert_has_calls([call(Measurement.VACCINATIONS, today),
                                                                      call(Measurement.COMPLETED_VACCINATIONS, today)])
-        get_vaccination_report_mock.assert_has_calls([call(accumulated_vaccinations, vaccinations, False),
-                                                      call(accumulated_completed_vaccinations, completed_vaccinations, True)])
-        twitter_mock.publish_sentences_in_tweets.assert_has_calls([call([sentence1], f"💉 Total Dosis a {date_str}",
-                                                                        last_tweet=first_tweet),
-                                                                   call([sentence2],
-                                                                        f"💉 Total Pautas Completas a {date_str}",
-                                                                        last_tweet=last_tweet)])
+        twitter_mock.publish_tweets.assert_called_once_with([f"Aragón - Vacunación a {date_str}:\n\n{ccaa1_sentence}",
+                                                             f"Madrid - Vacunación a {date_str}:\n\n{ccaa2_sentence}"],
+                                                            twitter_mock.publish_tweet_with_media.return_value)
         get_graph_url_mock.assert_called_once_with(datetime(2021, 1, 1), today, graph_path=VACCINE_IMAGE_PATH)
-        get_spain_vaccination_report_mock.assert_called_once_with(accumulated_vaccinations, vaccinations,
-                                                                  accumulated_completed_vaccinations,
-                                                                  completed_vaccinations, accumulated_first_doses,
-                                                                  first_doses)
-        twitter_mock.publish_tweet_with_media.assert_called_once_with(f"🇪🇸 España - Estado vacunación a {date_str}:"
+        get_vaccination_report_mock.assert_has_calls([call("España", accumulated_vaccinations, vaccinations,
+                                                           accumulated_completed_vaccinations,
+                                                           completed_vaccinations, accumulated_first_doses,
+                                                           first_doses),
+                                                      call("Aragón", accumulated_vaccinations, vaccinations,
+                                                           accumulated_completed_vaccinations,
+                                                           completed_vaccinations, accumulated_first_doses,
+                                                           first_doses),
+                                                      call("Madrid", accumulated_vaccinations, vaccinations,
+                                                           accumulated_completed_vaccinations,
+                                                           completed_vaccinations, accumulated_first_doses,
+                                                           first_doses)])
+        twitter_mock.publish_tweet_with_media.assert_called_once_with(f"🇪🇸 España - Vacunación a {date_str}:"
                                                                       f"\n\n{spain_sentence}\n\n➡️ Gráfico "
                                                                       f"Interactivo: https://home.aitormagan.es/d/TeEplNgRk/covid-vacunas-espana?orgId=1",
                                                                       get_graph_url_mock.return_value)
