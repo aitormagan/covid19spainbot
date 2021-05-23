@@ -5,43 +5,29 @@ from constants import GRAPH_IMAGE_PATH, SPAIN
 from helpers.spain_geography import CCAA_POPULATION, CCAA_ADMITTED_BEDS, CCAA_ICU_BEDS
 
 
-def get_spain_vaccination_report(accumulated_doses_data, today_doses_data,
-                                 accumulated_completed_vaccination_data, today_completed_vaccination_data,
-                                 accumulated_first_dose_data, today_first_dose_data):
+def get_vaccination_report(ccaa, accumulated_doses_data, today_doses_data,
+                           accumulated_completed_vaccination_data, today_completed_vaccination_data,
+                           accumulated_first_dose_data, today_first_dose_data):
 
-    tweet = get_vaccination_sentence("Dosis", accumulated_doses_data[SPAIN],
-                                     today_doses_data[SPAIN]) + "\n"
-    tweet += get_completed_vaccination_sentence("Personas 1 dosis", accumulated_first_dose_data[SPAIN],
-                                                today_first_dose_data[SPAIN]) + "\n"
-    tweet += get_completed_vaccination_sentence("Pautas completas", accumulated_completed_vaccination_data[SPAIN],
-                                                today_completed_vaccination_data[SPAIN])
+    tweet = get_vaccination_sentence("Dosis", accumulated_doses_data[ccaa],
+                                     today_doses_data[ccaa]) + "\n"
+    tweet += get_completed_vaccination_sentence(ccaa, "Personas 1 dosis", accumulated_first_dose_data[ccaa],
+                                                today_first_dose_data[ccaa]) + "\n"
+    tweet += get_completed_vaccination_sentence(ccaa, "Pautas completas", accumulated_completed_vaccination_data[ccaa],
+                                                today_completed_vaccination_data[ccaa])
 
     return tweet
 
 
-def get_vaccination_report(accumulated_data, today_data, percentage):
-    sentences = []
-    sentence_generator = {
-        True: get_completed_vaccination_sentence,
-        False: get_vaccination_sentence
-    }[percentage]
-
-    for ccaa in filter(lambda x: x in CCAA_POPULATION.keys(), accumulated_data.keys()):
-        sentences.append(sentence_generator(ccaa, accumulated_data[ccaa], today_data[ccaa]))
-
-    return sentences
+def get_vaccination_sentence(stat, accumulated, today_total):
+    return "- {0}: {1} 🔺{2}".format(stat, _format_number(accumulated), _format_number(today_total))
 
 
-def get_vaccination_sentence(territorial_unit, accumulated, today_total):
-    return "- {0}: {1} 🔺{2}".format(territorial_unit, _format_number(accumulated),
-                                     _format_number(today_total))
-
-
-def get_completed_vaccination_sentence(territorial_unit, accumulated, today_total):
+def get_completed_vaccination_sentence(territorial_unit, stat, accumulated, today_total):
     population = CCAA_POPULATION[territorial_unit] if territorial_unit in CCAA_POPULATION \
         else sum(CCAA_POPULATION.values())
     percentage_population = accumulated / population * 100
-    return "- {0}: {1} ({2}%) 🔺{3}".format(territorial_unit, _format_number(accumulated),
+    return "- {0}: {1} ({2}%) 🔺{3}".format(stat, _format_number(accumulated),
                                            _format_number(percentage_population),
                                            _format_number(today_total))
 
