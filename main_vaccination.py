@@ -7,7 +7,7 @@ from helpers.ministry_report import VaccinesMinistryReport
 from main_daily import update_stat
 from helpers.reports import get_vaccination_report, get_graph_url
 from helpers.spain_geography import CCAA_POPULATION
-from constants import VACCINE_IMAGE_PATH, ARMY, SPAIN
+from constants import VACCINE_IMAGE_PATH, SPAIN
 
 twitter = Twitter()
 influx = Influx()
@@ -40,9 +40,9 @@ def update_vaccinations(date):
     first_dose_column = get_column_index(vaccination_report.data_frame, "1 dosis")
     completed_column = get_column_index(vaccination_report.data_frame, "completada")
 
-    accumulated_vaccinations = vaccination_report.get_column_data(administrated_column, num_rows=20)
-    accumulated_first_doses = vaccination_report.get_column_data(first_dose_column, num_rows=20)
-    accumulated_completed_vaccinations = vaccination_report.get_column_data(completed_column, num_rows=20)
+    accumulated_vaccinations = vaccination_report.get_column_data(administrated_column, num_rows=21)
+    accumulated_first_doses = vaccination_report.get_column_data(first_dose_column, num_rows=21)
+    accumulated_completed_vaccinations = vaccination_report.get_column_data(completed_column, num_rows=21)
 
     accumulated_vaccinations[SPAIN] = sum(accumulated_vaccinations.values())
     accumulated_completed_vaccinations[SPAIN] = sum(accumulated_completed_vaccinations.values())
@@ -62,8 +62,10 @@ def update_percentage(date, accum_measurement, percentage_measurement):
     accum = influx.get_stat_accumulated_until_day(accum_measurement, date)
 
     data = {}
+    allowed_regions = CCAA_POPULATION.keys()
+    allowed_regions.push(SPAIN)
 
-    for region in filter(lambda x: x != ARMY, accum.keys()):
+    for region in filter(lambda x: x in allowed_regions, accum.keys()):
         percentage = 100 * accum[region] / (CCAA_POPULATION[region] if region in CCAA_POPULATION else sum(CCAA_POPULATION.values()))
         data[region] = percentage
 
