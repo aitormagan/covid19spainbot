@@ -62,8 +62,8 @@ def update_percentage(date, accum_measurement, percentage_measurement):
     accum = influx.get_stat_accumulated_until_day(accum_measurement, date)
 
     data = {}
-    allowed_regions = CCAA_POPULATION.keys()
-    allowed_regions.push(SPAIN)
+    allowed_regions = list(CCAA_POPULATION.keys())
+    allowed_regions.append(SPAIN)
 
     for region in filter(lambda x: x in allowed_regions, accum.keys()):
         percentage = 100 * accum[region] / (CCAA_POPULATION[region] if region in CCAA_POPULATION else sum(CCAA_POPULATION.values()))
