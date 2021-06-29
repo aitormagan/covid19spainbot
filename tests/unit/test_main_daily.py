@@ -157,11 +157,11 @@ class MainDailyUnitTest(unittest.TestCase):
 
         ministry_report_mock.assert_has_calls([call(today, 1),
                                                call(today, 5, (142, 490, 142+343, 490+265)),
-                                               call(today, 3),
+                                               call(today, 3, (169, 77, 169+289, 77+707)),
                                                call(today, 1, (239, 56, 239 + 283, 56 + 756))])
         pcrs_pdf.get_column_data.assert_has_calls([call(1), call(2), call(3, 1, float)])
         deaths_pdf.get_column_data.assert_has_calls([call(1)])
-        hospitals_pdf.get_column_data.assert_has_calls([call(2, cast=float), call(4, cast=float)])
+        hospitals_pdf.get_column_data.assert_has_calls([call(3, cast=float), call(6, cast=float)])
 
         update_stat_mock.assert_has_calls([call(Measurement.PCRS, accumulated_pcrs, today),
                                           call(Measurement.DEATHS, accumulated_deaths, today)])
@@ -210,10 +210,10 @@ class MainDailyUnitTest(unittest.TestCase):
 
         ministry_report_mock.assert_has_calls([call(today, 1),
                                                call(today, 5, (142, 490, 142+343, 490+265)),
-                                               call(today, 3)])
+                                               call(today, 3, (169, 77, 169+289, 77+707))])
         pcrs_pdf.get_column_data.assert_has_calls([call(1), call(2), call(3, 1, float)])
         deaths_pdf.get_column_data.assert_has_calls([call(1)])
-        hospitals_pdf.get_column_data.assert_has_calls([call(2, cast=float), call(4, cast=float)])
+        hospitals_pdf.get_column_data.assert_has_calls([call(3, cast=float), call(6, cast=float)])
 
         update_stat_mock.assert_has_calls([call(Measurement.PCRS, accumulated_pcrs, today),
                                           call(Measurement.DEATHS, accumulated_deaths, today)])
