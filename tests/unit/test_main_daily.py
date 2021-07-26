@@ -156,8 +156,8 @@ class MainDailyUnitTest(unittest.TestCase):
         update_database(today)
 
         ministry_report_mock.assert_has_calls([call(today, 1),
-                                               call(today, 5, (142, 490, 142+343, 490+265)),
-                                               call(today, 3, (169, 77, 169+280, 77+707)),
+                                               call(today, 5, (152, 490, 152+343, 490+265)),
+                                               call(today, 3, (179, 77, 179+280, 77+707)),
                                                call(today, 1, (239, 56, 239 + 283, 56 + 756))])
         pcrs_pdf.get_column_data.assert_has_calls([call(1), call(2), call(3, 1, float)])
         deaths_pdf.get_column_data.assert_has_calls([call(1)])
@@ -209,8 +209,8 @@ class MainDailyUnitTest(unittest.TestCase):
         update_database(today)
 
         ministry_report_mock.assert_has_calls([call(today, 1),
-                                               call(today, 5, (142, 490, 142+343, 490+265)),
-                                               call(today, 3, (169, 77, 169+280, 77+707))])
+                                               call(today, 5, (152, 490, 152+343, 490+265)),
+                                               call(today, 3, (179, 77, 179+280, 77+707))])
         pcrs_pdf.get_column_data.assert_has_calls([call(1), call(2), call(3, 1, float)])
         deaths_pdf.get_column_data.assert_has_calls([call(1)])
         hospitals_pdf.get_column_data.assert_has_calls([call(3, cast=float), call(6, cast=float)])
