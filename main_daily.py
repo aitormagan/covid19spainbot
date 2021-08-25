@@ -61,7 +61,10 @@ def update_database(today):
     today_percentage_admitted = hospital_report.get_column_data(3, cast=float)
     today_percentage_icu = hospital_report.get_column_data(6, cast=float)
     today_pcrs_last_24h = pcrs_report.get_column_data(2)
-    accumulated_incidence = pcrs_report.get_column_data(3, 1, float)
+    try:
+        accumulated_incidence = pcrs_report.get_column_data(3, 1, float)
+    except:
+        accumulated_incidence = pcrs_report.get_column_data(4, 0, float)
 
     update_stat(Measurement.PCRS, accumulated_pcrs_today, today)
     update_stat(Measurement.DEATHS, accumulated_deaths_today, today)
