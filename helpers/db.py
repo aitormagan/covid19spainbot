@@ -17,8 +17,10 @@ class Measurement(Enum):
     VACCINATIONS = "vaccinations"
     COMPLETED_VACCINATIONS = "completed_vaccinations"
     FIRST_DOSE_VACCINATIONS = "first_dose_vaccinations"
+    EXTRA_DOSE_VACCINATIONS = "extra_dose_vaccinations"
     PERCENTAGE_FIRST_DOSE = "percentage_first_dose"
     PERCENTAGE_COMPLETED_VACCINATION = "percentage_completed_vaccination"
+    PERCENTAGE_EXTRA_DOSE = "percentage_extra_dose"
 
 
 class Influx:

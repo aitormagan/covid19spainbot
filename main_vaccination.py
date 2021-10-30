@@ -24,6 +24,7 @@ def main():
             update_vaccinations(today)
             update_percentage(today, Measurement.COMPLETED_VACCINATIONS, Measurement.PERCENTAGE_COMPLETED_VACCINATION)
             update_percentage(today, Measurement.FIRST_DOSE_VACCINATIONS, Measurement.PERCENTAGE_FIRST_DOSE)
+            update_percentage(today, Measurement.EXTRA_DOSE_VACCINATIONS, Measurement.PERCENTAGE_EXTRA_DOSE)
             publish_report(today)
         except HTTPError:
             logging.info("PDF is not available yet...")
@@ -39,18 +40,22 @@ def update_vaccinations(date):
     administrated_column = get_column_index(vaccination_report.data_frame, "administradas")
     first_dose_column = get_column_index(vaccination_report.data_frame, "1 dosis")
     completed_column = get_column_index(vaccination_report.data_frame, "completada")
+    extra_column = get_column_index(vaccination_report.data_frame, "adicional")
 
     accumulated_vaccinations = vaccination_report.get_column_data(administrated_column, num_rows=21)
     accumulated_first_doses = vaccination_report.get_column_data(first_dose_column, num_rows=21)
     accumulated_completed_vaccinations = vaccination_report.get_column_data(completed_column, num_rows=21)
+    accumulated_extra_dose = vaccination_report.get_column_data(extra_column, num_rows=21)
 
     accumulated_vaccinations[SPAIN] = sum(accumulated_vaccinations.values())
     accumulated_completed_vaccinations[SPAIN] = sum(accumulated_completed_vaccinations.values())
     accumulated_first_doses[SPAIN] = sum(accumulated_first_doses.values())
+    accumulated_extra_dose[SPAIN] = sum(accumulated_extra_dose.values())
 
     update_stat(Measurement.VACCINATIONS, accumulated_vaccinations, date)
     update_stat(Measurement.COMPLETED_VACCINATIONS, accumulated_completed_vaccinations, date)
     update_stat(Measurement.FIRST_DOSE_VACCINATIONS, accumulated_first_doses, date)
+    update_stat(Measurement.EXTRA_DOSE_VACCINATIONS, accumulated_extra_dose, date)
 
 
 def get_column_index(df, column_title):
