@@ -2,18 +2,22 @@ import unittest
 from datetime import datetime
 from constants import VACCINE_IMAGE_PATH
 from unittest.mock import patch, MagicMock, call, ANY
-from main_vaccination import main, Measurement, HTTPError, update_vaccinations, publish_report, get_column_index
+from main_vaccination import main, Measurement, HTTPError, update_vaccinations, publish_report, get_column_index, \
+    update_percentage
+from helpers.spain_geography import CCAA_POPULATION
 
 
 class MainVaccinationUnitTest(unittest.TestCase):
 
+    @patch("main_vaccination.update_percentage")
     @patch("main_vaccination.update_vaccinations")
     @patch("main_vaccination.publish_report")
     @patch("main_vaccination.datetime")
     @patch("main_vaccination.influx")
     def test_given_data_when_main_then_update_and_publish_not_called(self, influx_mock, datetime_mock,
                                                                      publish_report_mock,
-                                                                     update_vaccinations_mock):
+                                                                     update_vaccinations_mock,
+                                                                     update_percentage_mock):
 
         influx_mock.get_stat_group_by_day.return_value = {"Madrid": 1}
 
@@ -21,35 +25,47 @@ class MainVaccinationUnitTest(unittest.TestCase):
 
         update_vaccinations_mock.assert_not_called()
         publish_report_mock.assert_not_called()
+        update_percentage_mock.assert_not_called()
         datetime_mock.now.assert_called_once_with()
         influx_mock.get_stat_group_by_day.assert_called_once_with(Measurement.VACCINATIONS,
                                                                   datetime_mock.now.return_value)
 
+    @patch("main_vaccination.update_percentage")
     @patch("main_vaccination.update_vaccinations")
     @patch("main_vaccination.publish_report")
     @patch("main_vaccination.datetime")
     @patch("main_vaccination.influx")
     def test_given_no_data_when_main_then_update_and_publish_called(self, influx_mock, datetime_mock,
                                                                     publish_report_mock,
-                                                                    update_vaccinations_mock):
+                                                                    update_vaccinations_mock,
+                                                                    update_percentage_mock):
 
         influx_mock.get_stat_group_by_day.return_value = {}
+        today = datetime_mock.now.return_value
 
         main()
 
-        update_vaccinations_mock.assert_called_once_with(datetime_mock.now.return_value)
-        publish_report_mock.assert_called_once_with(datetime_mock.now.return_value)
+        update_vaccinations_mock.assert_called_once_with(today)
+        publish_report_mock.assert_called_once_with(today)
         datetime_mock.now.assert_called_once_with()
         influx_mock.get_stat_group_by_day.assert_called_once_with(Measurement.VACCINATIONS,
-                                                                  datetime_mock.now.return_value)
+                                                                  today)
+        update_percentage_mock.assert_has_calls([call(today, Measurement.COMPLETED_VACCINATIONS,
+                                                      Measurement.PERCENTAGE_COMPLETED_VACCINATION),
+                                                 call(today, Measurement.FIRST_DOSE_VACCINATIONS,
+                                                      Measurement.PERCENTAGE_FIRST_DOSE),
+                                                 call(today, Measurement.EXTRA_DOSE_VACCINATIONS,
+                                                      Measurement.PERCENTAGE_EXTRA_DOSE)])
 
+    @patch("main_vaccination.update_percentage")
     @patch("main_vaccination.update_vaccinations")
     @patch("main_vaccination.publish_report")
     @patch("main_vaccination.datetime")
     @patch("main_vaccination.influx")
     def test_given_no_data_and_http_error_when_main_then_no_exception_raised(self, influx_mock, datetime_mock,
                                                                              publish_report_mock,
-                                                                             update_vaccinations_mock):
+                                                                             update_vaccinations_mock,
+                                                                             update_percentage_mock):
 
         update_vaccinations_mock.side_effect = HTTPError("http://google.com", 404, MagicMock(), MagicMock(), MagicMock())
         influx_mock.get_stat_group_by_day.return_value = {}
@@ -58,10 +74,12 @@ class MainVaccinationUnitTest(unittest.TestCase):
 
         update_vaccinations_mock.assert_called_once_with(datetime_mock.now.return_value)
         publish_report_mock.assert_not_called()
+        update_percentage_mock.assert_not_called()
         datetime_mock.now.assert_called_once_with()
         influx_mock.get_stat_group_by_day.assert_called_once_with(Measurement.VACCINATIONS,
                                                                   datetime_mock.now.return_value)
 
+    @patch("main_vaccination.update_percentage")
     @patch("main_vaccination.twitter")
     @patch("main_vaccination.update_vaccinations")
     @patch("main_vaccination.publish_report")
@@ -70,7 +88,7 @@ class MainVaccinationUnitTest(unittest.TestCase):
     def test_given_no_data_and_another_error_when_main_then_twitter_dm_sent(self, influx_mock, datetime_mock,
                                                                             publish_report_mock,
                                                                             update_vaccinations_mock,
-                                                                            twitter_mock):
+                                                                            twitter_mock, update_percentage_mock):
 
         exception_text = "exception text"
         update_vaccinations_mock.side_effect = Exception(exception_text * 100)
@@ -80,6 +98,7 @@ class MainVaccinationUnitTest(unittest.TestCase):
 
         update_vaccinations_mock.assert_called_once_with(datetime_mock.now.return_value)
         publish_report_mock.assert_not_called()
+        update_percentage_mock.assert_not_called()
         datetime_mock.now.assert_called_once_with()
         influx_mock.get_stat_group_by_day.assert_called_once_with(Measurement.VACCINATIONS,
                                                                   datetime_mock.now.return_value)
@@ -99,21 +118,24 @@ class MainVaccinationUnitTest(unittest.TestCase):
         vaccinations = MagicMock()
         first_dose = MagicMock()
         completed_vaccinations = MagicMock()
+        extra_dose = MagicMock()
         vaccines_ministry_report_mock.return_value.get_column_data.side_effect = [vaccinations, first_dose,
-                                                                                  completed_vaccinations]
+                                                                                  completed_vaccinations, extra_dose]
 
         doses_column = MagicMock()
         first_dose_column = MagicMock()
         completed_column = MagicMock()
+        extra_column = MagicMock()
 
-        get_column_index_mock.side_effect = [doses_column, first_dose_column, completed_column]
+        get_column_index_mock.side_effect = [doses_column, first_dose_column, completed_column, extra_column]
 
         update_vaccinations(today)
 
         vaccines_ministry_report_mock.assert_called_once_with(today, 1)
         vaccines_ministry_report_mock.return_value.get_column_data.assert_has_calls([call(doses_column, num_rows=21),
                                                                                      call(first_dose_column, num_rows=21),
-                                                                                     call(completed_column, num_rows=21)])
+                                                                                     call(completed_column, num_rows=21),
+                                                                                     call(extra_column, num_rows=21)])
         update_stat_mock.assert_has_calls([call(Measurement.VACCINATIONS,
                                                 vaccinations,
                                                 today),
@@ -122,7 +144,11 @@ class MainVaccinationUnitTest(unittest.TestCase):
                                                 today),
                                            call(Measurement.FIRST_DOSE_VACCINATIONS,
                                                 first_dose,
-                                                today)])
+                                                today),
+                                           call(Measurement.EXTRA_DOSE_VACCINATIONS,
+                                                extra_dose,
+                                                today)
+                                           ])
 
     def test_given_column_in_columns_when_get_column_index_then_position_returned(self):
         df = MagicMock()
@@ -193,3 +219,46 @@ class MainVaccinationUnitTest(unittest.TestCase):
                                                                       f"Interactivo: https://home.aitormagan.es/d/TeEplNgRk/covid-vacunas-espana?orgId=1",
                                                                       get_graph_url_mock.return_value)
         today.strftime.assert_called_once_with("%d/%m/%Y")
+
+    @patch("main_vaccination.influx")
+    def test_given_no_info_when_update_percentage_then_influx_called_with_empty_dict(self, influx_mock):
+        influx_mock.get_stat_accumulated_until_day.return_value = {}
+        date = MagicMock()
+        base_table = MagicMock()
+        final_table = MagicMock()
+
+        update_percentage(date, base_table, final_table)
+
+        influx_mock.get_stat_accumulated_until_day.assert_called_once_with(base_table, date)
+        influx_mock.insert_stats.assert_called_once_with(final_table, date, {})
+
+    @patch("main_vaccination.influx")
+    def test_given_info_when_update_percentage_then_influx_called_with_returned_regions(self, influx_mock):
+        region = "Castilla La Mancha"
+        region_population = CCAA_POPULATION[region]
+        half_population = int(region_population / 2)
+        expected_percentage = 100 * half_population / region_population
+        influx_mock.get_stat_accumulated_until_day.return_value = {region: half_population}
+        date = MagicMock()
+        base_table = MagicMock()
+        final_table = MagicMock()
+
+        update_percentage(date, base_table, final_table)
+
+        influx_mock.get_stat_accumulated_until_day.assert_called_once_with(base_table, date)
+        influx_mock.insert_stats.assert_called_once_with(final_table, date, {region: expected_percentage})
+
+    @patch("main_vaccination.influx")
+    def test_given_spain_info_when_update_percentage_then_influx_called_with_sum_spain_population(self, influx_mock):
+        spain_population = sum(CCAA_POPULATION.values())
+        half_population = int(spain_population / 2)
+        expected_percentage = 100 * half_population / spain_population
+        influx_mock.get_stat_accumulated_until_day.return_value = {"España": half_population}
+        date = MagicMock()
+        base_table = MagicMock()
+        final_table = MagicMock()
+
+        update_percentage(date, base_table, final_table)
+
+        influx_mock.get_stat_accumulated_until_day.assert_called_once_with(base_table, date)
+        influx_mock.insert_stats.assert_called_once_with(final_table, date, {"España": expected_percentage})
