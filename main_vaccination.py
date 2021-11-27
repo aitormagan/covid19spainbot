@@ -78,29 +78,28 @@ def update_percentage(date, accum_measurement, percentage_measurement):
 
 
 def publish_report(today):
-    today_vaccinations = influx.get_stat_group_by_day(Measurement.VACCINATIONS, today)
     today_completed_vaccinations = influx.get_stat_group_by_day(Measurement.COMPLETED_VACCINATIONS, today)
     today_first_doses = influx.get_stat_group_by_day(Measurement.FIRST_DOSE_VACCINATIONS, today)
-    accumulated_vaccinations = influx.get_stat_accumulated_until_day(Measurement.VACCINATIONS, today)
+    today_extra_doses = influx.get_stat_group_by_day(Measurement.EXTRA_DOSE_VACCINATIONS, today)
     accumulated_completed_vaccinations = influx.get_stat_accumulated_until_day(Measurement.COMPLETED_VACCINATIONS,
                                                                                today)
     accumulated_first_doses = influx.get_stat_accumulated_until_day(Measurement.FIRST_DOSE_VACCINATIONS, today)
+    accumulated_extra_doses = influx.get_stat_accumulated_until_day(Measurement.EXTRA_DOSE_VACCINATIONS, today)
 
     today_str = today.strftime("%d/%m/%Y")
-    spain_tweet = get_vaccination_report(SPAIN, accumulated_vaccinations, today_vaccinations,
-                                         accumulated_completed_vaccinations, today_completed_vaccinations,
-                                         accumulated_first_doses, today_first_doses)
+    spain_tweet = get_vaccination_report(SPAIN, accumulated_completed_vaccinations, today_completed_vaccinations,
+                                         accumulated_first_doses, today_first_doses, accumulated_extra_doses,
+                                         today_extra_doses)
     interactive_graph_sentence = "➡️ Gráfico Interactivo: https://home.aitormagan.es/d/TeEplNgRk/covid-vacunas-espana?orgId=1"
     spain_tweet = f"🇪🇸 España - Vacunación a {today_str}:\n\n{spain_tweet}\n\n{interactive_graph_sentence}"
     graph_url = get_graph_url(datetime(2021, 1, 1), today, graph_path=VACCINE_IMAGE_PATH)
     last_tweet = twitter.publish_tweet_with_media(spain_tweet, graph_url)
     ccaa_tweets = []
 
-    for ccaa in filter(lambda x: x in CCAA_POPULATION.keys(), sorted(accumulated_vaccinations.keys())):
-        ccaa_tweet = get_vaccination_report(ccaa, accumulated_vaccinations, today_vaccinations,
-                                            accumulated_completed_vaccinations,
-                                            today_completed_vaccinations,
-                                            accumulated_first_doses, today_first_doses)
+    for ccaa in filter(lambda x: x in CCAA_POPULATION.keys(), sorted(accumulated_first_doses.keys())):
+        ccaa_tweet = get_vaccination_report(ccaa, accumulated_completed_vaccinations, today_completed_vaccinations,
+                                            accumulated_first_doses, today_first_doses, accumulated_extra_doses,
+                                            today_extra_doses)
         ccaa_tweets.append(f"{ccaa} - Vacunación a {today_str}:\n\n{ccaa_tweet}")
 
     twitter.publish_tweets(ccaa_tweets, last_tweet)

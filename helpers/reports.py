@@ -5,16 +5,16 @@ from constants import GRAPH_IMAGE_PATH, SPAIN
 from helpers.spain_geography import CCAA_POPULATION, CCAA_ADMITTED_BEDS, CCAA_ICU_BEDS
 
 
-def get_vaccination_report(ccaa, accumulated_doses_data, today_doses_data,
-                           accumulated_completed_vaccination_data, today_completed_vaccination_data,
-                           accumulated_first_dose_data, today_first_dose_data):
+def get_vaccination_report(ccaa, accumulated_completed_vaccination_data, today_completed_vaccination_data,
+                           accumulated_first_dose_data, today_first_dose_data, accumulated_extra_dose_data,
+                           today_extra_dose_data):
 
-    tweet = get_vaccination_sentence("Dosis", accumulated_doses_data[ccaa],
-                                     today_doses_data[ccaa]) + "\n"
-    tweet += get_completed_vaccination_sentence(ccaa, "Personas 1 dosis", accumulated_first_dose_data[ccaa],
-                                                today_first_dose_data[ccaa]) + "\n"
-    tweet += get_completed_vaccination_sentence(ccaa, "Pautas completas", accumulated_completed_vaccination_data[ccaa],
-                                                today_completed_vaccination_data[ccaa])
+    tweet = get_completed_vaccination_sentence(ccaa, "1ª dosis", accumulated_first_dose_data[ccaa],
+                                               today_first_dose_data[ccaa]) + "\n"
+    tweet += get_completed_vaccination_sentence(ccaa, "2ª dosis", accumulated_completed_vaccination_data[ccaa],
+                                                today_completed_vaccination_data[ccaa]) + "\n"
+    tweet += get_completed_vaccination_sentence(ccaa, "3ª dosis", accumulated_extra_dose_data[ccaa],
+                                                today_extra_dose_data[ccaa])
 
     return tweet
 
