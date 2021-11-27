@@ -442,23 +442,21 @@ class ReportsUnitTest(unittest.TestCase):
     def test_given_non_existing_ccaa_when_get_completed_vaccination_sentence_then_whole_population_used(self):
         self.assertEqual("- Dosis: 2.000 (0,01%) 🔺700", get_completed_vaccination_sentence("España", "Dosis", 2000, 700))
 
-    @patch("helpers.reports.get_vaccination_sentence")
     @patch("helpers.reports.get_completed_vaccination_sentence")
-    def test_when_get_spain_vaccination_report_then_data_aggregated(self, get_completed_vaccination_sentence_mock,
-                                                                    get_vaccination_sentence_mock):
-        accumulated_doses = 2000
-        today_doses = 300
+    def test_when_get_spain_vaccination_report_then_data_aggregated(self, get_completed_vaccination_sentence_mock):
+        accumulated_extra = 2000
+        today_extra = 300
         accumulated_completed = 321
         accumulated_first_dose = 888
         today_completed = 100
         today_first_dose = 666
 
-        accumulated_doses_data = {
-            "España": accumulated_doses
+        accumulated_extra_data = {
+            "España": accumulated_extra
         }
 
-        today_doses_data = {
-            "España": today_doses
+        today_extra_data = {
+            "España": today_extra
         }
 
         accumulated_completed_data = {
@@ -480,18 +478,18 @@ class ReportsUnitTest(unittest.TestCase):
         sentence1 = "sentence1"
         sentence2 = "sentence2"
         sentence3 = "sentence3"
-        get_vaccination_sentence_mock.return_value = sentence1
-        get_completed_vaccination_sentence_mock.side_effect = [sentence2, sentence3]
+        get_completed_vaccination_sentence_mock.side_effect = [sentence1, sentence2, sentence3]
 
-        sentence = get_vaccination_report("España", accumulated_doses_data, today_doses_data,
-                                          accumulated_completed_data, today_completed_data,
-                                          accumulated_first_dose_data, today_first_dose_data)
+        sentence = get_vaccination_report("España", accumulated_completed_data, today_completed_data,
+                                          accumulated_first_dose_data, today_first_dose_data,
+                                          accumulated_extra_data, today_extra_data)
 
-        get_vaccination_sentence_mock.assert_called_once_with("Dosis", accumulated_doses,
-                                                              today_doses)
-        get_completed_vaccination_sentence_mock.assert_has_calls([call("España", "Personas 1 dosis", accumulated_first_dose,
+        get_completed_vaccination_sentence_mock.assert_has_calls([call("España", "1ª dosis", accumulated_first_dose,
                                                                        today_first_dose),
-                                                                  call("España", "Pautas completas", accumulated_completed,
-                                                                       today_completed)])
+                                                                  call("España", "2ª dosis", accumulated_completed,
+                                                                       today_completed),
+                                                                  call("España", "3ª dosis", accumulated_extra,
+                                                                       today_extra)
+                                                                  ])
 
         self.assertEqual(sentence1 + "\n" + sentence2 + "\n" + sentence3, sentence)
