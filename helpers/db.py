@@ -71,26 +71,36 @@ class Influx:
                 f"time <= '{day.strftime(self.DATE_FORMAT)}' group by ccaa;"
         return self._get_report(query)
 
-    def _get_report(self, query):
+    def get_last_value_from_week(self, mesaurement: Measurement, day):
+        monday = day + timedelta(0 - day.weekday())
+        sunday = day + timedelta(6 - day.weekday())
+
+        query = f"SELECT * FROM {mesaurement.value} where " \
+                f"time >= '{monday.strftime(self.DATE_FORMAT)} 00:00:00' and " \
+                f"time <= '{sunday.strftime(self.DATE_FORMAT)} 23:59:59' " \
+                f"group by ccaa order by desc limit 1"
+
+        return self._get_report(query, "value")
+
+    def _get_report(self, query, key="sum"):
         query_result = self.client.query(query)
         ccaa_map = {}
 
         for item in query_result.items():
             for values in item[1]:
-                ccaa_map[item[0][1]["ccaa"]] = values["sum"]
+                ccaa_map[item[0][1]["ccaa"]] = values[key]
 
         return ccaa_map
 
     def get_all_stats_group_by_week(self, day):
-        week_friday = day + timedelta(4 - day.weekday())
         pcrs = self.get_stat_group_by_week(Measurement.PCRS, day)
         deaths = self.get_stat_group_by_week(Measurement.DEATHS, day)
         pcrs_last_24h = self.get_stat_group_by_week(Measurement.PCRS_LAST_24H, day)
         admitted = self.get_stat_group_by_week(Measurement.ADMITTED_PEOPLE, day)
         icu = self.get_stat_group_by_week(Measurement.ICU_PEOPLE, day)
-        accumulated_incidence = self.get_stat_group_by_day(Measurement.ACCUMULATED_INCIDENCE, week_friday)
-        percentage_admitted = self.get_stat_group_by_day(Measurement.PERCENTAGE_ADMITTED, week_friday)
-        percentage_icu = self.get_stat_group_by_day(Measurement.PERCENTAGE_ICU, week_friday)
+        accumulated_incidence = self.get_last_value_from_week(Measurement.ACCUMULATED_INCIDENCE, day)
+        percentage_admitted = self.get_last_value_from_week(Measurement.PERCENTAGE_ADMITTED, day)
+        percentage_icu = self.get_last_value_from_week(Measurement.PERCENTAGE_ICU, day)
         vaccinations = self.get_stat_group_by_week(Measurement.VACCINATIONS, day)
         completed_vaccinations = self.get_stat_group_by_week(Measurement.COMPLETED_VACCINATIONS, day)
 

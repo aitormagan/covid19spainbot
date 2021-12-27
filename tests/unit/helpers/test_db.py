@@ -78,6 +78,19 @@ class InfluxUnitTest(unittest.TestCase):
         influx._get_report.assert_called_once_with(
             f"SELECT sum(value) FROM pcrs where time <= '2020-08-01' group by ccaa;")
 
+    def test_given_date_when_get_last_value_from_week_then_dates_set_accordingly(self):
+        influx = Influx()
+        influx._get_report = MagicMock()
+        date = datetime(2022, 1, 2)
+        stat = Measurement.ACCUMULATED_INCIDENCE
+
+        result = influx.get_last_value_from_week(stat, date)
+
+        self.assertEqual(result, influx._get_report.return_value)
+        influx._get_report.assert_called_once_with(
+            "SELECT * FROM accumulated_incidence where time >= '2021-12-27 00:00:00' and "
+            "time <= '2022-01-02 23:59:59' group by ccaa order by desc limit 1", "value")
+
     def test_given_database_info_when_get_report_then_map_returned(self):
         with patch.object(Influx, 'client'):
             self._influx = Influx()
@@ -115,7 +128,7 @@ class InfluxUnitTest(unittest.TestCase):
         influx = Influx()
         influx._pack_elements = MagicMock()
         influx.get_stat_group_by_week = MagicMock()
-        influx.get_stat_group_by_day = MagicMock()
+        influx.get_last_value_from_week = MagicMock()
         date = datetime(2020, 10, 11)
 
         result = influx.get_all_stats_group_by_week(date)
@@ -128,9 +141,9 @@ class InfluxUnitTest(unittest.TestCase):
                                                         call(Measurement.ADMITTED_PEOPLE, date),
                                                         call(Measurement.ICU_PEOPLE, date),
                                                         call(Measurement.VACCINATIONS, date)])
-        influx.get_stat_group_by_day.assert_has_calls([call(Measurement.ACCUMULATED_INCIDENCE, datetime(2020, 10, 9)),
-                                                       call(Measurement.PERCENTAGE_ADMITTED, datetime(2020, 10, 9)),
-                                                       call(Measurement.PERCENTAGE_ICU, datetime(2020, 10, 9))])
+        influx.get_last_value_from_week.assert_has_calls([call(Measurement.ACCUMULATED_INCIDENCE, date),
+                                                          call(Measurement.PERCENTAGE_ADMITTED, date),
+                                                          call(Measurement.PERCENTAGE_ICU, date)])
 
     def test_when_get_all_stats_accumulated_until_day_then_two_value_returned(self):
         influx = Influx()
