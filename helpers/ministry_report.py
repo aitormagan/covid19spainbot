@@ -44,7 +44,7 @@ class GenericMinistryReport(ABC):
             ccaa = self.data_frame[first_column][i].replace('*', '').replace('(', '').replace(')', '').replace('Leon', 'León').strip().replace('\r', ' ').replace('-', '').replace(' arra', 'arra')
             ccaa = ' '.join(ccaa.split())
             value_str = str(self.data_frame[self.data_frame.columns[column]][i]).split(' ')[part]
-            value_str = re.sub("\\.0$", "", value_str)
+            value_str = re.sub("\\.\\d$", "", value_str)
             value = value_str.replace('.', '').replace('-', '0').replace(',', '.').replace('%', '')
             cases[ccaa] = cast(value)
 
