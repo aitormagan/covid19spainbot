@@ -17,11 +17,11 @@ def main():
     accumulated_today = delete_pcrs24h(influx.get_all_stats_accumulated_until_day(date))
     date_header = get_date_header(date)
 
-    spain_report = get_global_report(date_header, today_data, last_week_data, accumulated_today)
+    spain_report = get_global_report(date_header, today_data, last_week_data, accumulated_today, vaccine_info=True)
     graph_url = get_graph_url(additional_vars={"group_by": "1w,4d"})
     last_id = twitter.publish_tweet_with_media(spain_report, graph_url)
 
-    tweets = get_report_by_ccaa(date_header, today_data, last_week_data, accumulated_today)
+    tweets = get_report_by_ccaa(date_header, today_data, last_week_data, accumulated_today, vaccine_info=True)
     last_id = twitter.publish_tweets(tweets, last_id)
     twitter.publish_tweet(get_final_tweet(), last_id)
 
