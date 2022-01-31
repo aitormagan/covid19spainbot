@@ -100,7 +100,6 @@ def get_territorial_unit_report(territorial_unit, header_date, today_data, yeste
                                          yesterday_data.get(Measurement.PCRS),
                                          accumulated_today.get(Measurement.PCRS)))
 
-    sentences.append("")
     sentences.append(get_report_sentence_with_unit("💥 IA",
                                                    today_data.get(Measurement.ACCUMULATED_INCIDENCE),
                                                    yesterday_data.get(Measurement.ACCUMULATED_INCIDENCE),
