@@ -32,22 +32,23 @@ def get_completed_vaccination_sentence(territorial_unit, stat, accumulated, toda
                                            _format_number(today_total))
 
 
-def get_report_by_ccaa(date_in_header, ccaas_today, ccaas_yesterday, ccaas_accumulated_today):
+def get_report_by_ccaa(date_in_header, ccaas_today, ccaas_yesterday, ccaas_accumulated_today, vaccine_info=False):
     tweets = []
     for ccaa in filter(lambda x: x in CCAA_POPULATION.keys(), sorted(ccaas_today.keys())):
         tweets.append(get_territorial_unit_report(ccaa, date_in_header, ccaas_today[ccaa],
-                                                  ccaas_yesterday[ccaa], ccaas_accumulated_today[ccaa]))
+                                                  ccaas_yesterday[ccaa], ccaas_accumulated_today[ccaa],
+                                                  vaccination_info=vaccine_info))
 
     return tweets
 
 
-def get_global_report(date_in_header, ccaas_today, ccaas_yesterday, ccaas_accumulated_today):
+def get_global_report(date_in_header, ccaas_today, ccaas_yesterday, ccaas_accumulated_today, vaccine_info=False):
     global_today_data = get_global_data(ccaas_today)
     global_yesterday_data = get_global_data(ccaas_yesterday)
     global_accumulated_data = get_global_data(ccaas_accumulated_today)
 
     return get_territorial_unit_report("🇪🇸 España", date_in_header, global_today_data, global_yesterday_data,
-                                       global_accumulated_data)
+                                       global_accumulated_data, vaccination_info=vaccine_info)
 
 
 def get_global_data(dict_to_unpack):
@@ -89,19 +90,17 @@ def calculate_global_incidence(dict_to_unpack, measurement):
     return total_cases / population * 100000 if population else 0
 
 
-def get_territorial_unit_report(territorial_unit, header_date, today_data, yesterday_data, accumulated_today):
+def get_territorial_unit_report(territorial_unit, header_date, today_data, yesterday_data, accumulated_today,
+                                vaccination_info=False):
 
     sentences = list()
     sentences.append(f"{territorial_unit} - {header_date}:")
     sentences.append("")
-    sentences.append(get_report_sentence("🧪 PCRs", today_data.get(Measurement.PCRS),
+    sentences.append(get_report_sentence("🧪 PCRs+/AGs+", today_data.get(Measurement.PCRS),
                                          yesterday_data.get(Measurement.PCRS),
                                          accumulated_today.get(Measurement.PCRS)))
 
-    if Measurement.PCRS_LAST_24H in today_data:
-        sentences.append(get_report_sentence("🧪 PCRs 24h", today_data.get(Measurement.PCRS_LAST_24H),
-                                             yesterday_data.get(Measurement.PCRS_LAST_24H)))
-
+    sentences.append("")
     sentences.append(get_report_sentence_with_unit("💥 IA",
                                                    today_data.get(Measurement.ACCUMULATED_INCIDENCE),
                                                    yesterday_data.get(Measurement.ACCUMULATED_INCIDENCE),
@@ -112,9 +111,7 @@ def get_territorial_unit_report(territorial_unit, header_date, today_data, yeste
                                          accumulated_today.get(Measurement.DEATHS)))
     sentences.append("")
 
-    # PCRs last 24 hour is not present in Weekly info.
-    # Vaccines info cannot be shown in daily reports because info. is not updated at the same time.
-    if Measurement.PCRS_LAST_24H not in today_data:
+    if vaccination_info:
         sentences.append(get_report_sentence("💉 Dosis", today_data.get(Measurement.VACCINATIONS),
                                              yesterday_data.get(Measurement.VACCINATIONS),
                                              accumulated_today.get(Measurement.VACCINATIONS)))

@@ -60,7 +60,6 @@ def update_database(today):
     accumulated_deaths_today = pcrs_report.get_column_data(5)
     today_percentage_admitted = hospital_report.get_column_data(3, cast=float)
     today_percentage_icu = hospital_report.get_column_data(6, cast=float)
-    today_pcrs_last_24h = pcrs_report.get_column_data(2)
     try:
         accumulated_incidence = pcrs_report.get_column_data(3, 1, float)
     except:
@@ -69,7 +68,6 @@ def update_database(today):
     update_stat(Measurement.PCRS, accumulated_pcrs_today, today)
     update_stat(Measurement.DEATHS, accumulated_deaths_today, today)
 
-    influx.insert_stats(Measurement.PCRS_LAST_24H, today, today_pcrs_last_24h)
     influx.insert_stats(Measurement.ACCUMULATED_INCIDENCE, today, accumulated_incidence)
     influx.insert_stats(Measurement.PERCENTAGE_ADMITTED, today, today_percentage_admitted)
     influx.insert_stats(Measurement.PERCENTAGE_ICU, today, today_percentage_icu)
