@@ -48,6 +48,8 @@ def update_database(today):
     pcrs_report = SpainCovid19MinistryReport(today, 1)
     try:
         hospital_report = SpainCovid19MinistryReport(today, 4)
+        # First attempt
+        hospital_report.get_column_data(3, cast=float)
     except:
         hospital_report = SpainCovid19MinistryReport(today, 4, (179, 77, 179+280, 77+707))
 
