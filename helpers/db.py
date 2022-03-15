@@ -95,7 +95,6 @@ class Influx:
     def get_all_stats_group_by_week(self, day):
         pcrs = self.get_stat_group_by_week(Measurement.PCRS, day)
         deaths = self.get_stat_group_by_week(Measurement.DEATHS, day)
-        pcrs_last_24h = self.get_stat_group_by_week(Measurement.PCRS_LAST_24H, day)
         admitted = self.get_stat_group_by_week(Measurement.ADMITTED_PEOPLE, day)
         icu = self.get_stat_group_by_week(Measurement.ICU_PEOPLE, day)
         accumulated_incidence = self.get_last_value_from_week(Measurement.ACCUMULATED_INCIDENCE, day)
@@ -107,7 +106,6 @@ class Influx:
         return self._pack_elements(**{
             Measurement.PCRS.value: pcrs,
             Measurement.DEATHS.value: deaths,
-            Measurement.PCRS_LAST_24H.value: pcrs_last_24h,
             Measurement.ADMITTED_PEOPLE.value: admitted,
             Measurement.ICU_PEOPLE.value: icu,
             Measurement.ACCUMULATED_INCIDENCE.value: accumulated_incidence,
@@ -120,7 +118,6 @@ class Influx:
     def get_all_stats_group_by_day(self, day):
         pcrs = self.get_stat_group_by_day(Measurement.PCRS, day)
         deaths = self.get_stat_group_by_day(Measurement.DEATHS, day)
-        pcrs_last_24h = self.get_stat_group_by_day(Measurement.PCRS_LAST_24H, day)
         admitted = self.get_stat_group_by_day(Measurement.ADMITTED_PEOPLE, day)
         icu = self.get_stat_group_by_day(Measurement.ICU_PEOPLE, day)
         accumulated_incidence = self.get_stat_group_by_day(Measurement.ACCUMULATED_INCIDENCE, day)
@@ -132,7 +129,6 @@ class Influx:
         return self._pack_elements(**{
             Measurement.PCRS.value: pcrs,
             Measurement.DEATHS.value: deaths,
-            Measurement.PCRS_LAST_24H.value: pcrs_last_24h,
             Measurement.ADMITTED_PEOPLE.value: admitted,
             Measurement.ICU_PEOPLE.value: icu,
             Measurement.ACCUMULATED_INCIDENCE.value: accumulated_incidence,
