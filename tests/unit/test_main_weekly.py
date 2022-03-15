@@ -35,12 +35,12 @@ class MainWeeklyUnitTest(unittest.TestCase):
 
         influx_mock.get_all_stats_group_by_week.assert_has_calls([call(today), call(previous_week)])
         get_report_by_ccaa_mock.assert_called_once_with(get_date_header_mock.return_value, today_data,
-                                                        previous_week_data, accumulated_today)
+                                                        previous_week_data, accumulated_today, vaccine_info=True)
         get_date_header_mock.assert_called_once_with(today)
 
         influx_mock.get_all_stats_accumulated_until_day.assert_called_once_with(today)
         get_global_report_mock.assert_called_once_with(get_date_header_mock.return_value, today_data,
-                                                       previous_week_data, accumulated_today)
+                                                       previous_week_data, accumulated_today, vaccine_info=True)
 
         twitter_mock.publish_tweet_with_media.assert_called_once_with(get_global_report_mock.return_value,
                                                                       get_graph_url_mock.return_value)

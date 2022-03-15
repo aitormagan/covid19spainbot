@@ -116,7 +116,6 @@ class InfluxUnitTest(unittest.TestCase):
 
         influx.get_stat_group_by_day.assert_has_calls([call(Measurement.PCRS, date),
                                                        call(Measurement.DEATHS, date),
-                                                       call(Measurement.PCRS_LAST_24H, date),
                                                        call(Measurement.ADMITTED_PEOPLE, date),
                                                        call(Measurement.ICU_PEOPLE, date),
                                                        call(Measurement.ACCUMULATED_INCIDENCE, date),
@@ -137,7 +136,6 @@ class InfluxUnitTest(unittest.TestCase):
 
         influx.get_stat_group_by_week.assert_has_calls([call(Measurement.PCRS, date),
                                                         call(Measurement.DEATHS, date),
-                                                        call(Measurement.PCRS_LAST_24H, date),
                                                         call(Measurement.ADMITTED_PEOPLE, date),
                                                         call(Measurement.ICU_PEOPLE, date),
                                                         call(Measurement.VACCINATIONS, date)])
