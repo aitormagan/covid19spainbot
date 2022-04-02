@@ -10,7 +10,7 @@ SPAIN = "España"
 INITIAL_DAY_TWO_REPORTS_A_WEEK = date(2022, 3, 14)
 
 # Include in days without report all mondays, wednesdays and thursdays from the 14th of March...
-for i in range(0, (date(2022, 3, 30) - INITIAL_DAY_TWO_REPORTS_A_WEEK).days + 1):
+for i in range(0, (date.today() - INITIAL_DAY_TWO_REPORTS_A_WEEK).days + 1):
     day = INITIAL_DAY_TWO_REPORTS_A_WEEK + timedelta(i)
     if day.weekday() in [0, 2, 3]:
         DAYS_WITHOUT_REPORT.append(day)

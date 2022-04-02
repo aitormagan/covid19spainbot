@@ -46,29 +46,15 @@ def subtract_days_ignoring_weekends(initial_date, days_to_substract):
 
 def update_database(today):
     pcrs_report = SpainCovid19MinistryReport(today, 1)
-    try:
-        accumulated_pcrs_today = pcrs_report.get_column_data(1)
-    except Exception:
-        # With some PDFs, tabula-pdf auto table detection fails.
-        # We need to specify a custom area.
-        pcrs_report = SpainCovid19MinistryReport(today, 1, (239, 56, 239 + 283, 56 + 756))
-        accumulated_pcrs_today = pcrs_report.get_column_data(1)
+    accumulated_pcrs_today = pcrs_report.get_column_data(1)
+    accumulated_incidence = pcrs_report.get_column_data(4, -1, float)
 
-    accumulated_deaths_today = pcrs_report.get_column_data(5)
-    try:
-        accumulated_incidence = pcrs_report.get_column_data(3, 1, float)
-    except:
-        accumulated_incidence = pcrs_report.get_column_data(4, 0, float)
+    deaths_report = SpainCovid19MinistryReport(today, 5, (110, 35, 110 + 285, 35 + 485))
+    accumulated_deaths_today = deaths_report.get_column_data(1)
 
-    hospital_report = SpainCovid19MinistryReport(today, 4)
-    try:
-        # First attempt
-        today_percentage_admitted = hospital_report.get_column_data(3, cast=float)
-        today_percentage_icu = hospital_report.get_column_data(6, cast=float)
-    except:
-        hospital_report = SpainCovid19MinistryReport(today, 4, (179, 77, 179+280, 77+707))
-        today_percentage_admitted = hospital_report.get_column_data(3, cast=float)
-        today_percentage_icu = hospital_report.get_column_data(6, cast=float)
+    hospital_report = SpainCovid19MinistryReport(today, 3)
+    today_percentage_admitted = hospital_report.get_column_data(3, 0, cast=float)
+    today_percentage_icu = hospital_report.get_column_data(3, 1, cast=float)
 
     update_stat(Measurement.PCRS, accumulated_pcrs_today, today)
     update_stat(Measurement.DEATHS, accumulated_deaths_today, today)
